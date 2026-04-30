@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "Bíblia Políglota",
+    "slug": "biblia-poliglota",
+    "version": "1.0.0",
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "plugins": [
+      "expo-asset",
+      "expo-sqlite"
+    ],
+    "platforms": [
+      "ios",
+      "android",
+      "web"
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "7d954fe7-0a44-4c31-9396-0724e1ae2041"
+      }
+    }
+  }
+}
