@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Bíblia Políglota",
+    "name": "Tetrapla",
     "slug": "biblia-poliglota",
     "version": "1.0.0",
     "assetBundlePatterns": [
@@ -19,6 +19,10 @@
       "eas": {
         "projectId": "7d954fe7-0a44-4c31-9396-0724e1ae2041"
       }
-    }
+    },
+    "android": {
+      "package": "com.felipegomesamorim.bibliapoliglota"
+    },
+    "icon": "./src/img/tetrapla-logo.png"
   }
 }

@@ -7,9 +7,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import { searchVerses, BOOKS } from '../db/database';
 import { Ionicons } from '@expo/vector-icons';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function SearchScreen({ navigation }: any) {
   const db = useSQLiteContext();
+  const { colors } = useTheme();
   const [searchText, setSearchText] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -48,10 +50,10 @@ export default function SearchScreen({ navigation }: any) {
 
     const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
     return (
-      <Text style={styles.resultText} numberOfLines={2}>
+      <Text style={[styles.resultText, { color: colors.textSecondary }]} numberOfLines={2}>
         {parts.map((part, idx) =>
           part.toLowerCase() === highlight.toLowerCase() ? (
-            <Text key={idx} style={{ fontWeight: 'bold' }}>
+            <Text key={idx} style={{ fontWeight: 'bold', color: colors.text }}>
               {part}
             </Text>
           ) : (
@@ -63,21 +65,21 @@ export default function SearchScreen({ navigation }: any) {
   };
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
-      <View style={styles.header}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right', 'bottom']}>
+      <View style={[styles.header, { borderBottomColor: colors.borderColor }]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="chevron-back" size={24} color="#1D9E75" />
+          <Ionicons name="chevron-back" size={24} color={colors.accentColor} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Buscar Versículos</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }]}>Buscar Versículos</Text>
         <View style={{ width: 24 }} />
       </View>
 
-      <View style={styles.searchBarContainer}>
-        <Ionicons name="search" size={20} color="#888" style={styles.searchIcon} />
+      <View style={[styles.searchBarContainer, { backgroundColor: colors.inputBackground }]}>
+        <Ionicons name="search" size={20} color={colors.inputPlaceholder} style={styles.searchIcon} />
         <TextInput
-          style={styles.searchInput}
+          style={[styles.searchInput, { color: colors.text }]}
           placeholder="Digite palavras..."
-          placeholderTextColor="#aaa"
+          placeholderTextColor={colors.inputPlaceholder}
           value={searchText}
           onChangeText={setSearchText}
           autoCorrect={false}
@@ -85,27 +87,27 @@ export default function SearchScreen({ navigation }: any) {
         />
         {searchText.length > 0 && (
           <TouchableOpacity onPress={() => setSearchText('')}>
-            <Ionicons name="close-circle" size={20} color="#aaa" />
+            <Ionicons name="close-circle" size={20} color={colors.inputPlaceholder} />
           </TouchableOpacity>
         )}
       </View>
 
       {loading && (
         <View style={styles.center}>
-          <ActivityIndicator size="large" color="#1D9E75" />
+          <ActivityIndicator size="large" color={colors.accentColor} />
         </View>
       )}
 
       {!loading && searchText.trim().length < 2 && (
         <View style={styles.center}>
-          <Ionicons name="search" size={48} color="#ddd" />
-          <Text style={styles.placeholderText}>Digite para buscar...</Text>
+          <Ionicons name="search" size={48} color={colors.borderColor} />
+          <Text style={[styles.placeholderText, { color: colors.textSecondary }]}>Digite para buscar...</Text>
         </View>
       )}
 
       {!loading && searchText.trim().length >= 2 && results.length === 0 && (
         <View style={styles.center}>
-          <Text style={styles.emptyText}>Nenhum versículo encontrado</Text>
+          <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhum versículo encontrado</Text>
         </View>
       )}
 
@@ -115,7 +117,7 @@ export default function SearchScreen({ navigation }: any) {
         contentContainerStyle={styles.resultsList}
         renderItem={({ item }) => (
           <TouchableOpacity
-            style={styles.resultRow}
+            style={[styles.resultRow, { borderBottomColor: colors.borderColor }]}
             onPress={() => {
               navigation.navigate('Reader', {
                 book: item.book,
@@ -127,12 +129,12 @@ export default function SearchScreen({ navigation }: any) {
             }}
           >
             <View style={styles.resultContent}>
-              <Text style={styles.resultRef}>
+              <Text style={[styles.resultRef, { color: colors.accentColor }]}>
                 {getBookName(item.book)} {item.chapter}:{item.verse}
               </Text>
               {renderHighlightedText(item.pt, searchText)}
             </View>
-            <Ionicons name="chevron-forward" size={18} color="#ccc" />
+            <Ionicons name="chevron-forward" size={18} color={colors.borderColor} />
           </TouchableOpacity>
         )}
       />

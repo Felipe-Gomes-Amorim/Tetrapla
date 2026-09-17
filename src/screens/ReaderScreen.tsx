@@ -5,11 +5,16 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSQLiteContext } from 'expo-sqlite';
-import { getVerses, getPatristicCountsForChapter, getPatristicRefs } from '../db/database';
+import { getVerses, getPatristicCountsForChapter, getPatristicRefs, markChapterAsRead, unmarkChapterAsRead, isChapterRead, getPreface } from '../db/database';
 import PatristicSheet from '../components/PatristicSheet';
 import CustomAlert from '../components/CustomAlert';
 import FontSizeModal from '../components/FontSizeModal';
 import { Ionicons } from '@expo/vector-icons';
+import { checkAchievementsForChapter, checkAchievementsForProgress } from '../db/achievementsDb';
+import { getTotalReadProgress } from '../db/database';
+import { getAchievementById } from '../data/achievements';
+import AchievementToast from '../components/AchievementToast';
+import { useTheme } from '../contexts/ThemeContext';
 
 type Lang = 'pt' | 'lat' | 'grc' | 'heb';
 const LANGS: { key: Lang; label: string }[] = [
@@ -21,6 +26,7 @@ const LANGS: { key: Lang; label: string }[] = [
 
 export default function ReaderScreen({ route, navigation }: any) {
   const db = useSQLiteContext();
+  const { colors } = useTheme();
   const { book, bookName, chapter, totalChapters, scrollToVerse } = route.params;
   const [lang, setLang] = useState<Lang>('pt');
   const [verses, setVerses] = useState<any[]>([]);
@@ -32,6 +38,10 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [alertVisible, setAlertVisible] = useState(false);
   const [fontSizeModalVisible, setFontSizeModalVisible] = useState(false);
   const [fontSize, setFontSize] = useState(16);
+  const [chapterRead, setChapterRead] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastAchievement, setToastAchievement] = useState<{ name: string; icon: string } | null>(null);
+  const [prefaceData, setPrefaceData] = useState<any>(null);
   const flatListRef = useRef<FlatList>(null);
 
   // Carregar tamanho de fonte salvo ao montar
@@ -75,20 +85,29 @@ export default function ReaderScreen({ route, navigation }: any) {
   useEffect(() => {
     navigation.setOptions({
       title: `${bookName} ${chapter}`,
+      headerStyle: {
+        backgroundColor: colors.headerBackground,
+      },
+      headerTintColor: colors.accentColor,
+      headerTitleStyle: {
+        color: colors.text,
+      },
       headerRight: () => (
-        <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 12 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 12, gap: 12 }}>
           <TouchableOpacity
             onPress={() => setFontSizeModalVisible(true)}
-            style={{ marginRight: 16 }}
           >
-            <Text style={{ fontSize: 24, fontWeight: 'bold', color: '#1D9E75' }}>A</Text>
+            <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.accentColor }}>A</Text>
           </TouchableOpacity>
           <TouchableOpacity onPress={() => navigation.navigate('Search')}>
-            <Ionicons name="search" size={24} color="#1D9E75" />
+            <Ionicons name="search" size={24} color={colors.accentColor} />
           </TouchableOpacity>
         </View>
       ),
     });
+  }, [navigation, bookName, chapter, colors]);
+
+  useEffect(() => {
     loadChapter();
   }, [book, chapter]);
 
@@ -124,10 +143,64 @@ export default function ReaderScreen({ route, navigation }: any) {
       setVerses(rows);
       const c = await getPatristicCountsForChapter(db, book, chapter);
       setCounts(c);
+
+      // Carregar estado do capítulo
+      const isRead = await isChapterRead(book, chapter);
+      setChapterRead(isRead);
+
+      // Carregar prefácio do livro (se houver)
+      try {
+        const prefaceRows = await getPreface(db, book);
+        if (prefaceRows && prefaceRows.length > 0) {
+          setPrefaceData(prefaceRows[0]);
+        } else {
+          setPrefaceData(null);
+        }
+      } catch (e) {
+        console.log('Prefácio não disponível para', book);
+        setPrefaceData(null);
+      }
     } catch (e) {
       console.error('Erro ao carregar capítulo:', e);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function toggleChapterRead() {
+    try {
+      if (chapterRead) {
+        // Desmarcar como lido
+        await unmarkChapterAsRead(book, chapter);
+        setChapterRead(false);
+      } else {
+        // Marcar como lido
+        await markChapterAsRead(book, chapter);
+        setChapterRead(true);
+
+        // Checar achievements
+        const chapAchievements = await checkAchievementsForChapter(book, chapter);
+        const progress = await getTotalReadProgress();
+        const progressAchievements = await checkAchievementsForProgress(progress);
+
+        const allUnlocked = [...chapAchievements, ...progressAchievements];
+
+        if (allUnlocked.length > 0) {
+          // Mostrar o primeiro achievement (geralmente há só um por ação)
+          const first = allUnlocked[0];
+          setToastAchievement({
+            name: first.name,
+            icon: first.icon,
+          });
+          setToastVisible(true);
+
+          setTimeout(() => {
+            setToastVisible(false);
+          }, 4000);
+        }
+      }
+    } catch (e) {
+      console.error('Erro ao marcar capítulo:', e);
     }
   }
 
@@ -152,21 +225,37 @@ export default function ReaderScreen({ route, navigation }: any) {
   };
 
   if (loading) return (
-    <View style={styles.center}>
-      <ActivityIndicator size="large" color="#1D9E75" />
+    <View style={[styles.center, { backgroundColor: colors.background }]}>
+      <ActivityIndicator size="large" color={colors.accentColor} />
     </View>
   );
 
+  const dynamicStyles = {
+    container: { backgroundColor: colors.background },
+    langBar: { borderBottomColor: colors.borderColor },
+    langBtn: { backgroundColor: colors.cardBackground },
+    langBtnActive: { backgroundColor: colors.accentColor },
+    langText: { color: colors.textSecondary },
+    langTextActive: { color: '#fff' },
+    verseText: { color: colors.text },
+    verseNum: { color: colors.textSecondary },
+    navBar: { borderTopColor: colors.borderColor, backgroundColor: colors.background },
+    navText: { color: colors.accentColor },
+    chapterMarkBtn: { backgroundColor: colors.cardBackground },
+    chapterMarkBtnActive: { backgroundColor: colors.cardBackground },
+    chapterMarkText: { color: colors.textSecondary },
+  };
+
   return (
-    <SafeAreaView style={styles.container} edges={['left', 'right', 'bottom']}>
-      <View style={styles.langBar}>
+    <SafeAreaView style={[styles.container, dynamicStyles.container]} edges={['left', 'right', 'bottom']}>
+      <View style={[styles.langBar, dynamicStyles.langBar]}>
         {LANGS.map(l => (
           <TouchableOpacity
             key={l.key}
-            style={[styles.langBtn, lang === l.key && styles.langBtnActive]}
+            style={[styles.langBtn, dynamicStyles.langBtn, lang === l.key && dynamicStyles.langBtnActive]}
             onPress={() => setLang(l.key)}
           >
-            <Text style={[styles.langText, lang === l.key && styles.langTextActive]}>
+            <Text style={[styles.langText, dynamicStyles.langText, lang === l.key && dynamicStyles.langTextActive]}>
               {l.label}
             </Text>
           </TouchableOpacity>
@@ -200,10 +289,10 @@ export default function ReaderScreen({ route, navigation }: any) {
 
           return (
             <View style={styles.verseRow}>
-              <Text style={styles.verseNum}>{item.verse}</Text>
+              <Text style={[styles.verseNum, dynamicStyles.verseNum]}>{item.verse}</Text>
               <View style={{ flex: 1 }}>
                 <Text
-                  style={[styles.verseText, { fontSize }]}
+                  style={[styles.verseText, dynamicStyles.verseText, { fontSize }]}
 
                   onLongPress={async () => {
                     await Clipboard.setStringAsync(copyText);
@@ -230,26 +319,51 @@ export default function ReaderScreen({ route, navigation }: any) {
         }}
       />
 
-      <View style={styles.navBar}>
+      <View style={[styles.navBar, dynamicStyles.navBar]}>
         <TouchableOpacity
           style={[styles.navBtn, chapter <= 1 && styles.navBtnDisabled]}
           onPress={() => goChapter(-1)}
           disabled={chapter <= 1}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Ionicons name="chevron-back" size={18} color="#1D9E75" />
-            <Text style={styles.navText}> Cap. {chapter - 1}</Text>
+            <Ionicons name="chevron-back" size={18} color={colors.accentColor} />
+            <Text style={[styles.navText, dynamicStyles.navText]}> Cap. {chapter - 1}</Text>
           </View>
         </TouchableOpacity>
-        <Text style={styles.navChapter}>{chapter} / {totalChapters}</Text>
+
+        <TouchableOpacity
+          style={[
+            styles.chapterMarkBtn,
+            dynamicStyles.chapterMarkBtn,
+            chapterRead && dynamicStyles.chapterMarkBtnActive,
+          ]}
+          onPress={toggleChapterRead}
+        >
+          <Ionicons
+            name={chapterRead ? 'checkmark-circle' : 'checkmark-circle-outline'}
+            size={20}
+            color={chapterRead ? colors.accentColor : colors.textSecondary}
+          />
+          <Text
+            style={[
+              styles.chapterMarkText,
+              dynamicStyles.chapterMarkText,
+              chapterRead && styles.chapterMarkTextActive,
+              chapterRead && { color: colors.accentColor },
+            ]}
+          >
+            Marcar capítulo
+          </Text>
+        </TouchableOpacity>
+
         <TouchableOpacity
           style={[styles.navBtn, chapter >= totalChapters && styles.navBtnDisabled]}
           onPress={() => goChapter(1)}
           disabled={chapter >= totalChapters}
         >
           <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-            <Text style={styles.navText}>Cap. {chapter + 1} </Text>
-            <Ionicons name="chevron-forward" size={18} color="#1D9E75" />
+            <Text style={[styles.navText, dynamicStyles.navText]}>Cap. {chapter + 1} </Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.accentColor} />
           </View>
         </TouchableOpacity>
       </View>
@@ -274,6 +388,18 @@ export default function ReaderScreen({ route, navigation }: any) {
         onClose={() => setFontSizeModalVisible(false)}
         onIncrease={increaseFontSize}
         onDecrease={decreaseFontSize}
+        colors={{
+          background: colors.background,
+          text: colors.text,
+          cardBackground: colors.cardBackground,
+          accentColor: colors.accentColor,
+          borderColor: colors.borderColor,
+        }}
+      />
+
+      <AchievementToast
+        visible={toastVisible}
+        achievement={toastAchievement}
       />
     </SafeAreaView>
   );
@@ -325,4 +451,24 @@ const styles = StyleSheet.create({
   navBtnDisabled: { opacity: 0.3 },
   navText: { color: '#1D9E75', fontSize: 14 },
   navChapter: { fontSize: 13, color: '#aaa' },
+  chapterMarkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    backgroundColor: '#f0f0f0',
+    borderRadius: 8,
+    gap: 6,
+  },
+  chapterMarkBtnActive: {
+    backgroundColor: '#E1F5EE',
+  },
+  chapterMarkText: {
+    color: '#888',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  chapterMarkTextActive: {
+    color: '#1D9E75',
+  },
 });

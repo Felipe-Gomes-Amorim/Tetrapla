@@ -141,3 +141,181 @@ export const BOOKS = [
   { code: 'JUD', name: 'Judas', chapters: 1 },
   { code: 'REV', name: 'Apocalipse', chapters: 22 },
 ];
+
+// Livros do Antigo Testamento (para diferenciar LXX de SBLGNT)
+export const OLD_TESTAMENT_BOOKS = new Set([
+  'GEN', 'EXO', 'LEV', 'NUM', 'DEU', 'JOS', 'JDG', 'RUT', '1SA', '2SA',
+  '1KI', '2KI', '1CH', '2CH', 'EZR', 'NEH', 'TOB', 'JDT', 'EST', '1MA', '2MA',
+  'JOB', 'PSA', 'PRO', 'ECC', 'SNG', 'WIS', 'SIR', 'ISA', 'JER', 'LAM',
+  'BAR', 'EZK', 'DAN', 'HOS', 'JOL', 'AMO', 'OBA', 'JON', 'MIC', 'NAH',
+  'HAB', 'ZEP', 'HAG', 'ZEC', 'MAL'
+]);
+
+// Livros Apócrifos (só têm em latim e grego, não em português)
+export const APOCRYPHAL_BOOKS = new Set(['TOB', 'JDT', '1MA', '2MA', 'WIS', 'SIR', 'BAR']);
+
+export function isOldTestament(bookCode: string): boolean {
+  return OLD_TESTAMENT_BOOKS.has(bookCode);
+}
+
+export function isApocryphal(bookCode: string): boolean {
+  return APOCRYPHAL_BOOKS.has(bookCode);
+}
+
+// ===== PROGRESSO DE LEITURA (FileSystem) =====
+import * as FileSystem from 'expo-file-system/legacy';
+
+const READ_CHAPTERS_DIR = `${FileSystem.documentDirectory}read_chapters/`;
+
+export async function ensureReadChaptersDir() {
+  const dirInfo = await FileSystem.getInfoAsync(READ_CHAPTERS_DIR);
+  if (!dirInfo.exists) {
+    await FileSystem.makeDirectoryAsync(READ_CHAPTERS_DIR, { intermediates: true });
+  }
+}
+
+export async function markChapterAsRead(bookCode: string, chapter: number) {
+  try {
+    await ensureReadChaptersDir();
+    const filePath = `${READ_CHAPTERS_DIR}${bookCode}_${chapter}.txt`;
+    await FileSystem.writeAsStringAsync(filePath, 'read');
+  } catch (e) {
+    console.error(`Erro ao marcar ${bookCode}_${chapter} como lido:`, e);
+  }
+}
+
+export async function unmarkChapterAsRead(bookCode: string, chapter: number) {
+  try {
+    const filePath = `${READ_CHAPTERS_DIR}${bookCode}_${chapter}.txt`;
+    await FileSystem.deleteAsync(filePath, { idempotent: true });
+  } catch (e) {
+    console.error(`Erro ao desmarcar ${bookCode}_${chapter}:`, e);
+  }
+}
+
+export async function isChapterRead(bookCode: string, chapter: number): Promise<boolean> {
+  try {
+    const filePath = `${READ_CHAPTERS_DIR}${bookCode}_${chapter}.txt`;
+    const fileInfo = await FileSystem.getInfoAsync(filePath);
+    return fileInfo.exists;
+  } catch (e) {
+    console.error(`Erro ao verificar se ${bookCode}_${chapter} foi lido:`, e);
+    return false;
+  }
+}
+
+export async function getTotalReadProgress(): Promise<number> {
+  try {
+    let totalChapters = 0;
+    for (const book of BOOKS) {
+      totalChapters += book.chapters;
+    }
+
+    // Contar capítulos lidos
+    let readChapters = 0;
+    try {
+      await ensureReadChaptersDir();
+      const files = await FileSystem.readDirectoryAsync(READ_CHAPTERS_DIR);
+      readChapters = files.length;
+    } catch (e) {
+      // Diretório vazio
+    }
+
+    return (readChapters / totalChapters) * 100;
+  } catch (e) {
+    console.error('Erro ao calcular progresso total:', e);
+    return 0;
+  }
+}
+
+export async function getBooksWithReadProgress() {
+  try {
+    let readFiles: string[] = [];
+    try {
+      await ensureReadChaptersDir();
+      readFiles = await FileSystem.readDirectoryAsync(READ_CHAPTERS_DIR);
+    } catch (e) {
+      // Diretório vazio
+    }
+
+    // Parsear arquivos para um mapa {book: set(chapters)}
+    const readMap: Record<string, Set<number>> = {};
+    for (const file of readFiles) {
+      const match = file.match(/^([A-Z0-9]+)_(\d+)\.txt$/);
+      if (match) {
+        const bookCode = match[1];
+        const chapter = parseInt(match[2], 10);
+        if (!readMap[bookCode]) readMap[bookCode] = new Set();
+        readMap[bookCode].add(chapter);
+      }
+    }
+
+    // Mapear para resultado
+    const result = BOOKS.map(book => ({
+      code: book.code,
+      name: book.name,
+      totalChapters: book.chapters,
+      readChapters: readMap[book.code]?.size ?? 0,
+    }));
+
+    return result;
+  } catch (e) {
+    console.error('Erro ao obter progresso por livro:', e);
+    return BOOKS.map(book => ({
+      code: book.code,
+      name: book.name,
+      totalChapters: book.chapters,
+      readChapters: 0,
+    }));
+  }
+}
+
+// ===== INICIALIZAÇÃO DO BANCO =====
+export async function initializeDatabase(db: SQLite.SQLiteDatabase) {
+  try {
+    // Criar tabela patristic_refs se não existir
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS patristic_refs (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book TEXT NOT NULL,
+        chapter INTEGER NOT NULL,
+        verse INTEGER NOT NULL,
+        author TEXT NOT NULL,
+        work TEXT NOT NULL,
+        quote TEXT NOT NULL
+      );
+      CREATE INDEX IF NOT EXISTS idx_patristic_refs ON patristic_refs(book, chapter, verse);
+    `);
+
+    // Criar tabela book_prefaces se não existir
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS book_prefaces (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        book TEXT NOT NULL UNIQUE,
+        title TEXT,
+        content_eng TEXT
+      );
+    `);
+
+    // Verificar quantos dados existem
+    const refCount = await db.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM patristic_refs'
+    );
+    const prefaceCount = await db.getFirstAsync<{ count: number }>(
+      'SELECT COUNT(*) as count FROM book_prefaces'
+    );
+
+    console.log('✅ Tabelas de referências patrísticas e prefácios criadas/verificadas');
+    console.log(`   📚 Referências patrísticas: ${refCount?.count || 0} registros`);
+    console.log(`   📖 Prefácios de livros: ${prefaceCount?.count || 0} registros`);
+
+    if ((refCount?.count || 0) === 0) {
+      console.warn('⚠️  AVISO: Nenhuma referência patrística encontrada no banco!');
+    }
+    if ((prefaceCount?.count || 0) === 0) {
+      console.warn('⚠️  AVISO: Nenhum prefácio encontrado no banco!');
+    }
+  } catch (e) {
+    console.error('❌ Erro ao criar tabelas:', e);
+  }
+}

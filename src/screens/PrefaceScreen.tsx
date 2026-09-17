@@ -3,6 +3,7 @@ import { View, Text, ScrollView, StyleSheet, ActivityIndicator } from 'react-nat
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import { getPreface } from '../db/database';
+import { useTheme } from '../contexts/ThemeContext';
 
 // Função para normalizar caracteres especiais/problemáticos
 function normalizeText(text: string): string {
@@ -22,11 +23,24 @@ function normalizeText(text: string): string {
     .replace(/[\uFFFD]/g, '?');
 }
 
-export default function PrefaceScreen({ route }: any) {
+export default function PrefaceScreen({ route, navigation }: any) {
   const db = useSQLiteContext();
+  const { colors } = useTheme();
   const { book, bookName } = route.params;
   const [preface, setPreface] = useState<{ title: string; content_eng: string } | null>(null);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerStyle: {
+        backgroundColor: colors.headerBackground,
+      },
+      headerTintColor: colors.accentColor,
+      headerTitleStyle: {
+        color: colors.text,
+      },
+    });
+  }, [colors, navigation]);
 
   useEffect(() => {
     loadPreface();
@@ -52,27 +66,27 @@ export default function PrefaceScreen({ route }: any) {
 
   if (loading) {
     return (
-      <View style={styles.center}>
-        <ActivityIndicator size="large" color="#1D9E75" />
+      <View style={[styles.center, { backgroundColor: colors.background }]}>
+        <ActivityIndicator size="large" color={colors.accentColor} />
       </View>
     );
   }
 
   if (!preface) {
     return (
-      <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right', 'bottom']}>
         <View style={styles.center}>
-          <Text style={styles.noContent}>Nenhum prefácio disponível para este livro.</Text>
+          <Text style={[styles.noContent, { color: colors.textSecondary }]}>Nenhum prefácio disponível para este livro.</Text>
         </View>
       </SafeAreaView>
     );
   }
 
   return (
-    <SafeAreaView style={styles.container} edges={['top', 'left', 'right', 'bottom']}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        <Text style={styles.title}>{preface.title}</Text>
-        <Text style={styles.content}>{preface.content_eng}</Text>
+        <Text style={[styles.title, { color: colors.accentColor }]}>{preface.title}</Text>
+        <Text style={[styles.content, { color: colors.text }]}>{preface.content_eng}</Text>
       </ScrollView>
     </SafeAreaView>
   );

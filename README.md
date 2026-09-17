@@ -1,147 +1,194 @@
-# Bíblia Políglota - App React Native (Expo)
+# Tetrapla
 
-App mobile para leitura de textos bíblicos em múltiplos idiomas com suporte a referências patrísticas.
-
-## 📋 Estrutura do Projeto
-
-```
-biblia-app/
-├── assets/
-│   └── bible.db                 ← Copie aqui o arquivo do banco
-├── src/
-│   ├── db/
-│   │   └── database.ts         # SQLite integration
-│   ├── screens/
-│   │   ├── BookListScreen.tsx  # Seleção de livros/capítulos
-│   │   └── ReaderScreen.tsx    # Leitor de versículos
-│   └── components/
-│       └── PatristicSheet.tsx  # Bottom sheet de citações
-├── App.tsx                      # Configuração principal
-├── app.json                     # Expo config
-├── package.json
-└── tsconfig.json
-```
-
-## 🚀 Setup Inicial
-
-### 1. Instalar dependências
-```bash
-npm install
-# ou
-yarn install
-```
-
-### 2. Copiar banco de dados
-Copie o arquivo `bible.db` do projeto Python para:
-```
-biblia-app/assets/bible.db
-```
-
-### 3. Rodar app
-```bash
-# iOS
-npm run ios
-
-# Android
-npm run android
-
-# Web
-npm run web
-
-# Desenvolvimento
-npm start
-```
-
-## 📱 Funcionalidades
-
-### Tela 1: BookListScreen
-- **Lista de livros**: 73 livros em ordem canônica
-- **Capítulos**: Grid 5x5 com navegação rápida
-- **Busca visual**: Diferenciação de AT/NT
-
-### Tela 2: ReaderScreen  
-- **Seletor de idiomas**: PT, LAT, GRC, HEB (abas)
-- **Versículos**: Leitura fluida com números laterais
-- **Referências patrísticas**: Badge com contador
-- **Navegação**: Anterior/próximo capítulo
-
-### Tela 3: PatristicSheet
-- **Bottom sheet**: Desliza de 40% a 85% da tela
-- **Cards**: Autor, obra, citação formatada
-- **Swipe to close**: Feche deslizando para baixo
-
-## 🗄️ Database
-
-### Conexão Automática
-- Se não encontrar `bible.db` no armazenamento, copia de `assets/`
-- Usa `expo-sqlite` para acesso rápido
-
-### Queries Implementadas
-```typescript
-getVerses(book, chapter)              // Todos versículos do capítulo
-getPatristicRefs(book, ch, v)         // Citações de um versículo
-getPatristicCount(book, ch, v)        // Número de referências
-getPreface(book)                      // Prefácio de um livro
-```
-
-## 🎨 Tema
-
-- **Cor primária**: `#1D9E75` (verde)
-- **Fundo**: `#fff` (branco)
-- **Texto principal**: `#1a1a1a` (quase preto)
-- **Acentos**: `#E1F5EE` (verde claro)
-
-## 📦 Dependências Principais
-
-- **expo**: Framework React Native
-- **expo-sqlite**: Database local
-- **react-navigation**: Navegação entre telas
-- **@gorhom/bottom-sheet**: Component deslizável
-- **react-native-reanimated**: Animações performáticas
-
-## ⚙️ Configuração TypeScript
-
-```json
-{
-  "compilerOptions": {
-    "target": "ES2020",
-    "module": "ESNext",
-    "lib": ["ES2020"],
-    "jsx": "react-native",
-    "strict": true,
-    "moduleResolution": "node"
-  }
-}
-```
-
-## 🐛 Troubleshooting
-
-### Erro: `bible.db` não encontrado
-- Verifique se o arquivo está em `assets/bible.db`
-- Rebuild: `expo prebuild --clean`
-
-### Layout quebrado em Android
-- Adicione `<GestureHandlerRootView>` wrapper (já feito em App.tsx)
-
-### Slow queries
-- Se houver muitos versículos, considere pagination
-- Adicione índices no banco (sql: `CREATE INDEX idx_book_ch ON verses(book, chapter)`)
-
-## 📄 Licenças
-
-- **App**: MIT
-- **Conteúdo Bíblico**: Vide banco `bible.db` (PD/CC-BY-SA)
-
-## 🔮 Próximas Fases
-
-- [ ] Search global de versículos
-- [ ] Favoritos com sincronização
-- [ ] Notas pessoais (local storage)
-- [ ] Tema escuro
-- [ ] Export para PDF/e-book
-- [ ] Sincronia com servidor (backend Supabase)
+**Tetrapla**, Inspirado pela Hexapla de Orígenes é um aplicativo mobile que une estudo bíblico profundo com uma experiência interativa moderna. A proposta é simples, mas poderosa: colocar diferentes tradições textuais lado a lado — e ao mesmo tempo incentivar progresso real de leitura através de mecânicas de gamificação.
 
 ---
 
-**Versão**: 1.0 (Beta)  
-**Atualizado**: 29 de abril de 2026
+## Visão geral
+
+O app reúne textos bíblicos em múltiplos idiomas e tradições:
+
+* Português
+* Latim (Vulgata)
+* Grego (Septuaginta / Novo Testamento)
+* Hebraico (Texto Massorético)
+* Aramaico (quando aplicável)
+
+Todos alinhados **versículo por versículo**, permitindo comparação direta entre tradições textuais.
+
+Além disso, o app integra:
+
+* **12.482 referências dos Pais Ante-Nicenos**, conectadas a versículos específicos
+* Prefácios e materiais de Jerônimo
+* Estrutura pensada tanto para estudo quanto para leitura contínua
+
+---
+
+## Objetivo
+
+O Tetrapla não é apenas uma ferramenta acadêmica.
+
+Ele foi projetado para responder a dois problemas comuns:
+
+1. **Estudo profundo é fragmentado**
+   → textos, línguas e comentários ficam espalhados
+
+2. **Leitura bíblica consistente é difícil de manter**
+   → falta motivação e senso de progresso
+
+A solução proposta:
+
+> unir profundidade textual com engajamento progressivo
+
+---
+
+## Funcionalidades principais
+
+### Comparação textual
+
+* Visualização paralela de múltiplas tradições
+* Navegação por livro, capítulo e versículo
+* Foco em fidelidade textual
+
+---
+
+### Referências patrísticas
+
+* Integração com escritos dos Pais Ante-Nicenos
+* Conexão direta com versículos
+* Facilita estudos históricos e teológicos
+
+---
+
+### Gamificação (diferencial central)
+
+O app inclui um sistema completo de progressão:
+
+#### Progresso de leitura
+
+* Acompanhamento em porcentagem da Bíblia lida
+* Evolução visível ao longo do tempo
+
+#### Títulos progressivos
+
+* Usuário recebe **títulos conforme avança**
+* Exemplo de progressão:
+
+  * Iniciante
+  * Leitor
+  * Discípulo
+  * Escriba
+  * (e níveis mais avançados)
+
+#### Achievements
+
+* Conquistas por:
+
+  * leitura de capítulos específicos
+  * marcos de progresso
+  * exploração de conteúdos
+
+A ideia não é "gamificar por gamificar", mas:
+
+> incentivar constância sem perder o foco espiritual e intelectual
+
+---
+
+## Stack
+
+* **Python**
+
+  * processamento de dados
+  * estruturação textual
+  * geração de banco (SQLite)
+
+* **React Native / Expo**
+
+  * interface mobile
+  * experiência do usuário
+  * sistema de progresso e conquistas
+
+---
+
+## Filosofia do projeto
+
+O Tetrapla parte de uma ideia simples:
+
+> leitura e estudo não precisam ser separados
+
+Ele tenta recuperar algo que existia naturalmente na tradição antiga:
+
+* leitura contínua
+* contato com o texto original
+* diálogo com intérpretes históricos
+
+Mas com uma camada moderna:
+
+* feedback de progresso
+* motivação contínua
+* experiência fluida no mobile
+
+---
+
+## Desenvolvimento
+
+### Estrutura do projeto
+
+```text
+biblia-app/
+├── assets/
+│   └── bible.db                 # Banco consolidado (textos + referências patrísticas)
+├── src/
+│   ├── db/
+│   │   ├── database.ts          # Integração SQLite (versículos, referências)
+│   │   └── achievementsDb.ts    # Progresso e conquistas
+│   ├── contexts/                # Contextos React (estado global)
+│   ├── screens/
+│   │   ├── BookListScreen.tsx   # Seleção de livros/capítulos
+│   │   ├── ReaderScreen.tsx     # Leitor de versículos
+│   │   ├── SearchScreen.tsx     # Busca global
+│   │   ├── PrefaceScreen.tsx    # Prefácios (ex: Jerônimo)
+│   │   ├── AchievementsScreen.tsx
+│   │   └── ProgressScreen.tsx
+│   └── components/
+│       ├── PatristicSheet.tsx   # Bottom sheet de citações
+│       ├── FontSizeModal.tsx
+│       ├── AchievementToast.tsx
+│       └── ProgressRing.tsx
+├── App.tsx                      # Configuração principal
+├── app.json                     # Expo config
+├── eas.json                     # Configuração de build (EAS)
+└── package.json
+```
+
+### Setup inicial
+
+```bash
+# 1. Instalar dependências
+npm install
+
+# 2. Rodar o app
+npm start        # modo desenvolvimento
+npm run ios
+npm run android
+npm run web
+```
+
+O arquivo `assets/bible.db` já vem incluído no repositório — não é necessário gerá-lo separadamente. Ele é criado a partir do projeto [bible-importer](https://github.com/Felipe-Gomes-Amorim/bible-importer), que consolida as fontes textuais brutas em um único banco SQLite.
+
+### Banco de dados
+
+* Na primeira execução, o app copia `assets/bible.db` para o armazenamento local (`expo-sqlite`)
+* Principais queries: `getVerses`, `getPatristicRefs`, `getPatristicCountsForChapter`
+
+### Troubleshooting
+
+* **`bible.db` não encontrado**: verifique se `assets/bible.db` existe e rode `expo prebuild --clean`
+* **Layout quebrado no Android**: confirme que `GestureHandlerRootView` está envolvendo o app (já configurado em `App.tsx`)
+
+---
+
+## Licenças
+
+* **App**: MIT (veja [LICENSE](LICENSE))
+* **Conteúdo bíblico**: vide fontes do banco `bible.db` (domínio público / CC-BY-SA, conforme a tradição textual)

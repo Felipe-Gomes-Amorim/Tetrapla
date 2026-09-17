@@ -8,7 +8,21 @@ interface FontSizeModalProps {
   onClose: () => void;
   onIncrease: () => void;
   onDecrease: () => void;
+  colors?: {
+    background: string;
+    text: string;
+    cardBackground: string;
+    accentColor: string;
+    borderColor?: string;
+  };
 }
+
+const defaultColors = {
+  background: '#fff',
+  text: '#222',
+  cardBackground: '#f5f5f5',
+  accentColor: '#1D9E75',
+};
 
 export default function FontSizeModal({
   visible,
@@ -16,6 +30,7 @@ export default function FontSizeModal({
   onClose,
   onIncrease,
   onDecrease,
+  colors = defaultColors,
 }: FontSizeModalProps) {
   return (
     <Modal
@@ -24,33 +39,33 @@ export default function FontSizeModal({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <View style={styles.overlay}>
-        <View style={styles.modalContainer}>
+      <View style={[styles.overlay, { backgroundColor: 'rgba(0, 0, 0, 0.5)' }]}>
+        <View style={[styles.modalContainer, { backgroundColor: colors.background }]}>
           <TouchableOpacity style={styles.closeBtn} onPress={onClose}>
-            <Ionicons name="close" size={24} color="#1D9E75" />
+            <Ionicons name="close" size={24} color={colors.accentColor} />
           </TouchableOpacity>
 
-          <Text style={styles.title}>Tamanho da Fonte</Text>
+          <Text style={[styles.title, { color: colors.text }]}>Tamanho da Fonte</Text>
 
-          <View style={styles.previewContainer}>
-            <Text style={[styles.previewText, { fontSize: currentSize }]}>
+          <View style={[styles.previewContainer, { backgroundColor: colors.cardBackground }]}>
+            <Text style={[styles.previewText, { fontSize: currentSize, color: colors.text }]}>
               Jesus Cristo
             </Text>
           </View>
 
           <View style={styles.controlsContainer}>
-            <TouchableOpacity style={styles.button} onPress={onDecrease}>
+            <TouchableOpacity style={[styles.button, { backgroundColor: colors.accentColor }]} onPress={onDecrease}>
               <Text style={styles.buttonText}>−</Text>
             </TouchableOpacity>
 
-            <Text style={styles.sizeLabel}>{currentSize}px</Text>
+            <Text style={[styles.sizeLabel, { color: colors.accentColor }]}>{currentSize}px</Text>
 
-            <TouchableOpacity style={styles.button} onPress={onIncrease}>
+            <TouchableOpacity style={[styles.button, { backgroundColor: colors.accentColor }]} onPress={onIncrease}>
               <Text style={styles.buttonText}>+</Text>
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.confirmBtn} onPress={onClose}>
+          <TouchableOpacity style={[styles.confirmBtn, { backgroundColor: colors.accentColor }]} onPress={onClose}>
             <Text style={styles.confirmText}>OK</Text>
           </TouchableOpacity>
         </View>
