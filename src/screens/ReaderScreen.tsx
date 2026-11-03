@@ -10,12 +10,7 @@ import PatristicSheet from '../components/PatristicSheet';
 import CustomAlert from '../components/CustomAlert';
 import FontSizeModal from '../components/FontSizeModal';
 import { Ionicons } from '@expo/vector-icons';
-import { checkAchievementsForChapter, checkAchievementsForProgress } from '../db/achievementsDb';
-import { getTotalReadProgress } from '../db/database';
-import { getAchievementById } from '../data/achievements';
-import AchievementToast from '../components/AchievementToast';
 import { useTheme } from '../contexts/ThemeContext';
-import { useSettings } from '../contexts/SettingsContext';
 import { brandFont } from '../theme/fonts';
 
 type Lang = 'pt' | 'lat' | 'grc' | 'heb';
@@ -29,7 +24,6 @@ const LANGS: { key: Lang; label: string }[] = [
 export default function ReaderScreen({ route, navigation }: any) {
   const db = useSQLiteContext();
   const { colors } = useTheme();
-  const { showDeuterocanonical } = useSettings();
   const { book, bookName, chapter, totalChapters, scrollToVerse } = route.params;
   const [lang, setLang] = useState<Lang>('pt');
   const [availableLangs, setAvailableLangs] = useState<Lang[] | null>(null);
@@ -43,8 +37,6 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [fontSizeModalVisible, setFontSizeModalVisible] = useState(false);
   const [fontSize, setFontSize] = useState(16);
   const [chapterRead, setChapterRead] = useState(false);
-  const [toastVisible, setToastVisible] = useState(false);
-  const [toastAchievement, setToastAchievement] = useState<{ name: string; icon: string } | null>(null);
   const [prefaceData, setPrefaceData] = useState<any>(null);
   const flatListRef = useRef<FlatList>(null);
 
@@ -194,27 +186,6 @@ export default function ReaderScreen({ route, navigation }: any) {
         // Marcar como lido
         await markChapterAsRead(book, chapter);
         setChapterRead(true);
-
-        // Checar achievements
-        const chapAchievements = await checkAchievementsForChapter(book, chapter);
-        const progress = await getTotalReadProgress(showDeuterocanonical);
-        const progressAchievements = await checkAchievementsForProgress(progress);
-
-        const allUnlocked = [...chapAchievements, ...progressAchievements];
-
-        if (allUnlocked.length > 0) {
-          // Mostrar o primeiro achievement (geralmente há só um por ação)
-          const first = allUnlocked[0];
-          setToastAchievement({
-            name: first.name,
-            icon: first.icon,
-          });
-          setToastVisible(true);
-
-          setTimeout(() => {
-            setToastVisible(false);
-          }, 4000);
-        }
       }
     } catch (e) {
       console.error('Erro ao marcar capítulo:', e);
@@ -412,11 +383,6 @@ export default function ReaderScreen({ route, navigation }: any) {
           accentColor: colors.accentColor,
           borderColor: colors.borderColor,
         }}
-      />
-
-      <AchievementToast
-        visible={toastVisible}
-        achievement={toastAchievement}
       />
     </SafeAreaView>
   );

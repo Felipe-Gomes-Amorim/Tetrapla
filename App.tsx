@@ -16,9 +16,10 @@ import ReaderScreen from './src/screens/ReaderScreen';
 import PrefaceScreen from './src/screens/PrefaceScreen';
 import SearchScreen from './src/screens/SearchScreen';
 import ProgressScreen from './src/screens/ProgressScreen';
-import AchievementsScreen from './src/screens/AchievementsScreen';
+import SettingsScreen from './src/screens/SettingsScreen';
 import { initializeDatabase } from './src/db/database';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
+import { SettingsProvider } from './src/contexts/SettingsContext';
 import { BRAND_FONT_NAME, SUB_FONT_NAME, setBrandFontLoaded, setSubFontLoaded } from './src/theme/fonts';
 
 const Stack = createStackNavigator();
@@ -133,8 +134,8 @@ function AppContent() {
           options={{ headerShown: false }}
         />
         <Stack.Screen
-          name="Achievements"
-          component={AchievementsScreen}
+          name="Settings"
+          component={SettingsScreen}
           options={{ headerShown: false }}
         />
       </Stack.Navigator>
@@ -225,9 +226,11 @@ export default function App() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <SQLiteProvider databaseName="bible.db" onInit={testDatabase}>
-            <AppContent />
-          </SQLiteProvider>
+          <SettingsProvider>
+            <SQLiteProvider databaseName="bible.db" onInit={testDatabase}>
+              <AppContent />
+            </SQLiteProvider>
+          </SettingsProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

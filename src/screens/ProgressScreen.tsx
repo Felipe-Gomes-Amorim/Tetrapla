@@ -10,10 +10,12 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { getTotalReadProgress, getBooksWithReadProgress, BOOKS } from '../db/database';
+import { getTotalReadProgress, getBooksWithReadProgress } from '../db/database';
+import { useSettings } from '../contexts/SettingsContext';
 import ProgressRing from '../components/ProgressRing';
 import { getTitleAndBadge } from '../data/titles';
 import { useTheme } from '../contexts/ThemeContext';
+import { subFont } from '../theme/fonts';
 
 interface BookProgress {
   code: string;
@@ -31,17 +33,18 @@ export default function ProgressScreen({ navigation }: any) {
   const [tierColor, setTierColor] = useState('#a0a0a0');
   const [books, setBooks] = useState<BookProgress[]>([]);
   const [loading, setLoading] = useState(true);
+  const { showDeuterocanonical } = useSettings();
 
   useFocusEffect(
     React.useCallback(() => {
       loadProgress();
-    }, [])
+    }, [showDeuterocanonical])
   );
 
   async function loadProgress() {
     try {
       setLoading(true);
-      const prog = await getTotalReadProgress();
+      const prog = await getTotalReadProgress(showDeuterocanonical);
       setProgress(prog);
 
       const titleInfo = getTitleAndBadge(prog);
@@ -49,7 +52,7 @@ export default function ProgressScreen({ navigation }: any) {
       setBadge(titleInfo.badge);
       setTierColor(titleInfo.tierColor);
 
-      const booksData = await getBooksWithReadProgress();
+      const booksData = await getBooksWithReadProgress(showDeuterocanonical);
       // Filtrar apenas livros que foram lidos (readChapters > 0)
       const readBooks = booksData.filter(b => b.readChapters > 0);
       setBooks(readBooks);
@@ -74,7 +77,7 @@ export default function ProgressScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={colors.accentColor} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Progresso de Leitura</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }, subFont()]}>Progresso de Leitura</Text>
         <View style={{ width: 28 }} />
       </View>
 
