@@ -1,15 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import {
   View, Text, SectionList, FlatList, TouchableOpacity, StyleSheet,
   BackHandler, Platform, ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useFocusEffect, useIsFocused } from '@react-navigation/native';
+import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFatherGroups, FatherWork } from '../data/fathers';
 import { getWorkChapters, ParsedWork, INTRO_N, NOTES_N } from '../data/fatherChapters';
-import { getReadChapters, getTotalProgress } from '../data/fatherProgress';
+import { getReadChapters, getTotalProgress, getFatherProgressVersion } from '../data/fatherProgress';
 import ProgressRing from '../components/ProgressRing';
 import OutlinedIcon from '../components/OutlinedIcon';
 import { subFont } from '../theme/fonts';
@@ -20,9 +20,55 @@ function formatSize(kb: number) {
   return kb >= 1000 ? `${(kb / 1024).toFixed(1).replace('.', ',')} MB` : `${kb} KB`;
 }
 
+const WorkRow = React.memo(function WorkRow({
+  work, colors, onSelect,
+}: {
+  work: FatherWork; colors: any; onSelect: (work: FatherWork) => void;
+}) {
+  return (
+    <TouchableOpacity
+      style={[styles.row, { borderBottomColor: colors.borderColor }]}
+      onPress={() => onSelect(work)}
+    >
+      <View style={{ flex: 1 }}>
+        <Text style={[styles.workTitle, { color: colors.text }]}>{work.title}</Text>
+        <Text style={[styles.workMeta, { color: colors.textSecondary }]}>
+          {work.author} · {work.chapterCount} cap. · {formatSize(work.sizeKB)}
+        </Text>
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+    </TouchableOpacity>
+  );
+});
+
+// Tamanho da fonte do rótulo calculado pelo comprimento (evita adjustsFontSizeToFit, que mede cada célula)
+function chapterLabelSize(label: string): number {
+  if (label.length <= 3) return 16;
+  if (label.length <= 5) return 13;
+  return 10;
+}
+
+const ChapterCell = React.memo(function ChapterCell({
+  work, chapter, label, isRead, colors, onOpen,
+}: {
+  work: FatherWork; chapter: number; label: string; isRead: boolean; colors: any;
+  onOpen: (work: FatherWork, chapter: number) => void;
+}) {
+  const readBg = colors.isDark ? '#1a3a1a' : '#E8F5E9';
+  return (
+    <TouchableOpacity
+      style={[styles.chapterBtn, { backgroundColor: isRead ? readBg : colors.cardBackground }]}
+      onPress={() => onOpen(work, chapter)}
+    >
+      <Text style={[styles.chapterText, { color: colors.text, fontSize: chapterLabelSize(label) }]} numberOfLines={1}>
+        {label}
+      </Text>
+    </TouchableOpacity>
+  );
+});
+
 export default function FathersListScreen({ navigation }: any) {
   const { colors } = useTheme();
-  const isFocused = useIsFocused();
   const [selectedWork, setSelectedWork] = useState<FatherWork | null>(null);
   const [parsed, setParsed] = useState<ParsedWork | null>(null);
   const [loadError, setLoadError] = useState(false);
@@ -30,8 +76,14 @@ export default function FathersListScreen({ navigation }: any) {
   const [totalPercent, setTotalPercent] = useState(0);
 
   // Recarrega progresso quando a aba/tela volta ao foco (o leitor é uma tela do Stack pai)
+  // (pula se nada foi marcado/desmarcado desde a última carga)
+  const lastLoad = useRef<{ version: number; work: string | null } | null>(null);
   useFocusEffect(
     React.useCallback(() => {
+      const current = { version: getFatherProgressVersion(), work: selectedWork?.id ?? null };
+      const last = lastLoad.current;
+      if (last && last.version === current.version && last.work === current.work) return;
+      lastLoad.current = current;
       getTotalProgress().then(p => setTotalPercent(p.percent)).catch(() => {});
       if (selectedWork) {
         getReadChapters(selectedWork.id).then(setReadChapters).catch(() => setReadChapters(new Set()));
@@ -60,17 +112,34 @@ export default function FathersListScreen({ navigation }: any) {
 
   // Voltar do Android: da grade de capítulos para a lista (só com esta aba em foco)
   useEffect(() => {
-    if (!selectedWork || !isFocused) return;
+    if (!selectedWork) return;
     if (Platform.OS !== 'android') return;
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
+      // Consulta o foco na hora do toque (sem re-renderizar a tela a cada troca de aba)
+      if (!navigation.isFocused()) return false;
       setSelectedWork(null);
       return true;
     });
     return () => sub.remove();
-  }, [selectedWork, isFocused]);
+  }, [selectedWork, navigation]);
 
-  const openChapter = (work: FatherWork, chapter: number) =>
-    navigation.navigate('FatherReader', { id: work.id, chapter });
+  const openChapter = useCallback((work: FatherWork, chapter: number) =>
+    navigation.navigate('FatherReader', { id: work.id, chapter }), [navigation]);
+
+  const renderChapterCell = useCallback(({ item }: { item: { n: number; label: string } }) => (
+    <ChapterCell
+      work={selectedWork!}
+      chapter={item.n}
+      label={item.label}
+      isRead={readChapters.has(item.n)}
+      colors={colors}
+      onOpen={openChapter}
+    />
+  ), [selectedWork, readChapters, colors, openChapter]);
+
+  const renderWork = useCallback(({ item }: { item: FatherWork }) => (
+    <WorkRow work={item} colors={colors} onSelect={setSelectedWork} />
+  ), [colors]);
 
   const topButtons = (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
@@ -85,7 +154,6 @@ export default function FathersListScreen({ navigation }: any) {
 
   // Grade de capítulos do escrito escolhido
   if (selectedWork) {
-    const readBg = colors.isDark ? '#1a3a1a' : '#E8F5E9';
     const chapters = parsed?.chapters ?? [];
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
@@ -136,20 +204,11 @@ export default function FathersListScreen({ navigation }: any) {
                 </TouchableOpacity>
               ) : undefined
             }
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                style={[styles.chapterBtn, { backgroundColor: readChapters.has(item.n) ? readBg : colors.cardBackground }]}
-                onPress={() => openChapter(selectedWork, item.n)}
-              >
-                <Text
-                  style={[styles.chapterText, { color: colors.text }, item.label.length > 5 && styles.chapterTextSmall]}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            )}
+            renderItem={renderChapterCell}
+            extraData={readChapters}
+            initialNumToRender={30}
+            windowSize={7}
+            removeClippedSubviews
           />
         )}
       </SafeAreaView>
@@ -171,20 +230,8 @@ export default function FathersListScreen({ navigation }: any) {
         renderSectionHeader={({ section }) => (
           <Text style={[styles.sectionTitle, { color: colors.accentColor }, subFont()]}>{section.title}</Text>
         )}
-        renderItem={({ item }: { item: FatherWork }) => (
-          <TouchableOpacity
-            style={[styles.row, { borderBottomColor: colors.borderColor }]}
-            onPress={() => setSelectedWork(item)}
-          >
-            <View style={{ flex: 1 }}>
-              <Text style={[styles.workTitle, { color: colors.text }]}>{item.title}</Text>
-              <Text style={[styles.workMeta, { color: colors.textSecondary }]}>
-                {item.author} · {item.chapterCount} cap. · {formatSize(item.sizeKB)}
-              </Text>
-            </View>
-            <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
-          </TouchableOpacity>
-        )}
+        renderItem={renderWork}
+        initialNumToRender={20}
       />
     </SafeAreaView>
   );
@@ -232,7 +279,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 2,
   },
   chapterText: { fontSize: 16 },
-  chapterTextSmall: { fontSize: 12 },
   introBtn: {
     margin: 4, marginBottom: 8,
     borderRadius: 8,
