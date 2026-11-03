@@ -5,6 +5,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useTheme } from '../contexts/ThemeContext';
+import { subFont } from '../theme/fonts';
 
 type Ref = { author: string; work: string; quote: string };
 
@@ -34,7 +35,7 @@ export default function PatristicSheet({ visible, onClose, refs, verseRef }: Pro
       backgroundColor: colors.cardBackground, borderRadius: 10,
       padding: 14, marginBottom: 10,
     },
-    author: { fontSize: 14, fontWeight: '600', color: colors.text },
+    author: { fontSize: 16, fontWeight: '600', color: colors.text, ...subFont() },
     work: { fontSize: 12, color: colors.textSecondary, marginTop: 2, marginBottom: 6 },
     quote: { fontSize: 14, lineHeight: 20, color: colors.text, fontStyle: 'italic' },
     empty: { textAlign: 'center', color: colors.textSecondary, marginTop: 40 },

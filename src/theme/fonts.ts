@@ -10,3 +10,16 @@ export function setBrandFontLoaded(loaded: boolean) {
 export function brandFont() {
   return brandFontLoaded ? { fontFamily: BRAND_FONT_NAME, fontWeight: 'normal' as const } : {};
 }
+
+export const SUB_FONT_NAME = 'Bevan';
+
+let subFontLoaded = false;
+
+export function setSubFontLoaded(loaded: boolean) {
+  subFontLoaded = loaded;
+}
+
+// Fonte dos subtítulos (prefácios, nomes dos pais da Igreja); vazio se falhou ao carregar.
+export function subFont() {
+  return subFontLoaded ? { fontFamily: SUB_FONT_NAME, fontWeight: 'normal' as const } : {};
+}

@@ -19,7 +19,7 @@ import ProgressScreen from './src/screens/ProgressScreen';
 import AchievementsScreen from './src/screens/AchievementsScreen';
 import { initializeDatabase } from './src/db/database';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
-import { BRAND_FONT_NAME, setBrandFontLoaded } from './src/theme/fonts';
+import { BRAND_FONT_NAME, SUB_FONT_NAME, setBrandFontLoaded, setSubFontLoaded } from './src/theme/fonts';
 
 const Stack = createStackNavigator();
 
@@ -146,10 +146,12 @@ export default function App() {
   const [ready, setReady] = useState(false);
   const [fontsLoaded, fontError] = useFonts({
     [BRAND_FONT_NAME]: require('./assets/fonts/AlfaSlabOne-Regular.ttf'),
+    [SUB_FONT_NAME]: require('./assets/fonts/Bevan-Regular.ttf'),
   });
   // Se a fonte falhar, segue com a fonte do sistema em vez de travar o app
   const fontsDone = fontsLoaded || !!fontError;
   setBrandFontLoaded(fontsLoaded);
+  setSubFontLoaded(fontsLoaded);
 
   useEffect(() => {
     prepareDb().then(() => setReady(true));

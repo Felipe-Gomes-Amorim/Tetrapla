@@ -10,7 +10,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ProgressRing from '../components/ProgressRing';
 import { useTheme } from '../contexts/ThemeContext';
-import { brandFont } from '../theme/fonts';
+import { brandFont, subFont } from '../theme/fonts';
 
 export default function BookListScreen({ navigation }: any) {
   const { colors, toggleTheme } = useTheme();
@@ -136,7 +136,7 @@ export default function BookListScreen({ navigation }: any) {
               bookName: selectedBook.name,
             })}
           >
-            <Text style={[styles.prefaceText, { color: colors.text }]}>Prefácio de São Jerônimo</Text>
+            <Text style={[styles.prefaceText, { color: colors.text }, subFont()]}>Prefácio de São Jerônimo</Text>
           </TouchableOpacity>
         )}
 
@@ -362,5 +362,5 @@ const styles = StyleSheet.create({
     paddingVertical: 16, paddingHorizontal: 12,
     alignItems: 'center', justifyContent: 'center',
   },
-  prefaceText: { fontSize: 16, fontWeight: '600', color: '#1D9E75', textAlign: 'center' },
+  prefaceText: { fontSize: 18, fontWeight: '600', color: '#1D9E75', textAlign: 'center' },
 });

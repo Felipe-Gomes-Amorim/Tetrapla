@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import { getPreface } from '../db/database';
 import { useTheme } from '../contexts/ThemeContext';
-import { brandFont } from '../theme/fonts';
+import { brandFont, subFont } from '../theme/fonts';
 
 // Função para normalizar caracteres especiais/problemáticos
 function normalizeText(text: string): string {
@@ -22,6 +22,25 @@ function normalizeText(text: string): string {
     .replace(/[\u00A0\u2000-\u200B]/g, ' ')  // Espaços especiais → espaço normal
     // Remove losango com interrogação e outros símbolos de erro
     .replace(/[\uFFFD]/g, '?');
+}
+
+type Block = { heading: boolean; text: string };
+
+// Linhas inteiramente em maiúsculas (ex: "BEGINNING OF THE PROLOGUE...") viram títulos;
+// linhas de título consecutivas são unidas em um só.
+function splitBlocks(text: string): Block[] {
+  const blocks: Block[] = [];
+  for (const line of text.split(/\r?\n/)) {
+    const trimmed = line.trim();
+    const letters = trimmed.match(/[A-Za-z]/g)?.length ?? 0;
+    const heading = letters >= 8 && trimmed === trimmed.toUpperCase();
+    const last = blocks[blocks.length - 1];
+    if (heading && last?.heading) last.text += ' ' + trimmed;
+    else if (heading) blocks.push({ heading: true, text: trimmed });
+    else if (last && !last.heading) last.text += '\n' + line;
+    else blocks.push({ heading: false, text: line });
+  }
+  return blocks;
 }
 
 export default function PrefaceScreen({ route, navigation }: any) {
@@ -87,8 +106,14 @@ export default function PrefaceScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right', 'bottom']}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.scrollContent}>
-        <Text style={[styles.title, { color: colors.accentColor }]}>{preface.title}</Text>
-        <Text style={[styles.content, { color: colors.text }]}>{preface.content_eng}</Text>
+        <Text style={[styles.title, { color: colors.accentColor }, subFont()]}>{preface.title}</Text>
+        {splitBlocks(preface.content_eng).map((b, i) =>
+          b.heading ? (
+            <Text key={i} style={[styles.heading, { color: colors.accentColor }, subFont()]}>{b.text}</Text>
+          ) : (
+            <Text key={i} style={[styles.content, { color: colors.text }]}>{b.text}</Text>
+          )
+        )}
       </ScrollView>
     </SafeAreaView>
   );
@@ -99,7 +124,8 @@ const styles = StyleSheet.create({
   scroll: { flex: 1 },
   scrollContent: { padding: 16, paddingBottom: 40 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 20 },
-  title: { fontSize: 18, fontWeight: '600', marginBottom: 16, color: '#1D9E75' },
+  title: { fontSize: 22, marginBottom: 16, color: '#1D9E75' },
+  heading: { fontSize: 17, lineHeight: 24, marginTop: 12, marginBottom: 8, textAlign: 'center', color: '#1D9E75' },
   content: { fontSize: 14, lineHeight: 22, color: '#333', textAlign: 'justify' },
   noContent: { fontSize: 16, color: '#888', textAlign: 'center' },
 });
