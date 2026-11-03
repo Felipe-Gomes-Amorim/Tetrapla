@@ -11,7 +11,7 @@ import CustomAlert from '../components/CustomAlert';
 import FontSizeModal from '../components/FontSizeModal';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { brandFont } from '../theme/fonts';
+import { brandFont, readingFont } from '../theme/fonts';
 
 type Lang = 'pt' | 'lat' | 'grc' | 'heb';
 const LANGS: { key: Lang; label: string }[] = [
@@ -280,7 +280,8 @@ export default function ReaderScreen({ route, navigation }: any) {
               <Text style={[styles.verseNum, dynamicStyles.verseNum]}>{item.verse}</Text>
               <View style={{ flex: 1 }}>
                 <Text
-                  style={[styles.verseText, dynamicStyles.verseText, { fontSize }]}
+                  // Lora só tem glifos latinos: grego e hebraico ficam na fonte do sistema
+                  style={[styles.verseText, dynamicStyles.verseText, { fontSize }, (lang === 'pt' || lang === 'lat') && readingFont()]}
 
                   onLongPress={async () => {
                     await Clipboard.setStringAsync(copyText);
