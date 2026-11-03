@@ -15,6 +15,7 @@ import { getTotalReadProgress } from '../db/database';
 import { getAchievementById } from '../data/achievements';
 import AchievementToast from '../components/AchievementToast';
 import { useTheme } from '../contexts/ThemeContext';
+import { brandFont } from '../theme/fonts';
 
 type Lang = 'pt' | 'lat' | 'grc' | 'heb';
 const LANGS: { key: Lang; label: string }[] = [
@@ -91,6 +92,7 @@ export default function ReaderScreen({ route, navigation }: any) {
       headerTintColor: colors.accentColor,
       headerTitleStyle: {
         color: colors.text,
+        ...brandFont(),
       },
       headerRight: () => (
         <View style={{ flexDirection: 'row', alignItems: 'center', paddingRight: 12, gap: 12 }}>

@@ -4,6 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import { getPreface } from '../db/database';
 import { useTheme } from '../contexts/ThemeContext';
+import { brandFont } from '../theme/fonts';
 
 // Função para normalizar caracteres especiais/problemáticos
 function normalizeText(text: string): string {
@@ -38,6 +39,7 @@ export default function PrefaceScreen({ route, navigation }: any) {
       headerTintColor: colors.accentColor,
       headerTitleStyle: {
         color: colors.text,
+        ...brandFont(),
       },
     });
   }, [colors, navigation]);

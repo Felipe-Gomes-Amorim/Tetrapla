@@ -10,6 +10,7 @@ import { SQLiteProvider } from 'expo-sqlite';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Asset } from 'expo-asset';
 import { Ionicons } from '@expo/vector-icons';
+import { useFonts } from 'expo-font';
 import BookListScreen from './src/screens/BookListScreen';
 import ReaderScreen from './src/screens/ReaderScreen';
 import PrefaceScreen from './src/screens/PrefaceScreen';
@@ -18,6 +19,7 @@ import ProgressScreen from './src/screens/ProgressScreen';
 import AchievementsScreen from './src/screens/AchievementsScreen';
 import { initializeDatabase } from './src/db/database';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
+import { BRAND_FONT_NAME, setBrandFontLoaded } from './src/theme/fonts';
 
 const Stack = createStackNavigator();
 
@@ -147,6 +149,12 @@ function AppContent() {
 
 export default function App() {
   const [ready, setReady] = useState(false);
+  const [fontsLoaded, fontError] = useFonts({
+    [BRAND_FONT_NAME]: require('./assets/fonts/AlfaSlabOne-Regular.ttf'),
+  });
+  // Se a fonte falhar, segue com a fonte do sistema em vez de travar o app
+  const fontsDone = fontsLoaded || !!fontError;
+  setBrandFontLoaded(fontsLoaded);
 
   useEffect(() => {
     prepareDb().then(() => setReady(true));
@@ -210,7 +218,7 @@ export default function App() {
     console.log('Banco existe:', fileInfo.exists, 'Tamanho:', (fileInfo as any).size);
   }
 
-  if (!ready) return (
+  if (!ready || !fontsDone) return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
       <ActivityIndicator size="large" color="#1D9E75" />
     </View>

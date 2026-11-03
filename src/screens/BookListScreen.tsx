@@ -10,6 +10,7 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ProgressRing from '../components/ProgressRing';
 import { useTheme } from '../contexts/ThemeContext';
+import { brandFont } from '../theme/fonts';
 
 export default function BookListScreen({ navigation }: any) {
   const { colors, toggleTheme } = useTheme();
@@ -117,7 +118,7 @@ export default function BookListScreen({ navigation }: any) {
           }} style={styles.chapterBackBtn}>
             <Ionicons name="chevron-back" size={24} color={colors.accentColor} />
           </TouchableOpacity>
-          <Text style={[styles.chapterHeaderTitle, { color: colors.text }]}>{selectedBook.name}</Text>
+          <Text style={[styles.chapterHeaderTitle, { color: colors.text }, brandFont()]}>{selectedBook.name}</Text>
           <TouchableOpacity 
             onPress={() => navigation.navigate('Search')}
             style={styles.chapterSearchBtn}
@@ -187,7 +188,7 @@ export default function BookListScreen({ navigation }: any) {
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right', 'bottom']}>
         <View style={[styles.titleBarContainer, { backgroundColor: colors.background, borderBottomColor: colors.borderColor }]}>
           <TouchableOpacity onPress={toggleTheme}>
-            <Text style={[styles.title, { color: colors.text }]}>Tetrapla</Text>
+            <Text style={[styles.title, { color: colors.text }, brandFont()]}>Tetrapla</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 20 }}>
             <TouchableOpacity onPress={() => navigation.navigate('Progress')}>
