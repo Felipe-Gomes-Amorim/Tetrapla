@@ -290,7 +290,7 @@ export default function ReaderScreen({ route, navigation }: any) {
                   {text}
                 </Text>
                 {/* Se for hebraico e houver aramaico, mostra o aramaico em vermelho */}
-                {lang === 'heb' && item.aram && item.aram.trim() !== '' && (
+                {lang === 'heb' && !!item.aram && item.aram.trim() !== '' && (
                   <Text style={[styles.aramaicText, { fontSize: fontSize * 0.9 }]}>{item.aram}</Text>
                 )}
               </View>
