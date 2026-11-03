@@ -335,8 +335,22 @@ export async function getBooksWithReadProgress(includeDeutero: boolean = true) {
   }
 }
 
+// Remove a pasta de achievements deixada por versões antigas (idempotente; nunca lança)
+export async function cleanupLegacyAchievements() {
+  try {
+    const dir = `${FileSystem.documentDirectory}achievements/`;
+    const info = await FileSystem.getInfoAsync(dir);
+    if (info.exists) {
+      await FileSystem.deleteAsync(dir, { idempotent: true });
+    }
+  } catch (e) {
+    console.warn('Não foi possível limpar achievements antigos:', e);
+  }
+}
+
 // ===== INICIALIZAÇÃO DO BANCO =====
 export async function initializeDatabase(db: SQLite.SQLiteDatabase) {
+  await cleanupLegacyAchievements();
   try {
     // Criar tabela patristic_refs se não existir
     await db.execAsync(`
