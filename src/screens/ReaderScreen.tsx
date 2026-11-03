@@ -275,7 +275,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           const count = counts[item.verse] ?? 0;
           // Monta a edição
           let edition = '';
-          if (lang === 'pt') edition = 'JFA';
+          if (lang === 'pt') edition = 'ARA';
           else if (lang === 'lat') edition = 'Vulgata';
           else if (lang === 'grc') edition = 'Grego';
           else if (lang === 'heb') edition = 'Hebraico';
