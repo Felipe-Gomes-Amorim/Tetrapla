@@ -13,6 +13,18 @@ export default function SettingsScreen({ navigation }: any) {
   // Opções extras: aparecem com fade + slide ao ligar e saem do layout só depois da animação de saída
   const anim = useRef(new Animated.Value(groupBooks ? 1 : 0)).current;
   const [renderExtra, setRenderExtra] = useState(groupBooks);
+
+  // Seletor Cristão | Judaico: o fundo verde desliza (translateX, native driver) e a cor do texto troca junto
+  const [segmentWidth, setSegmentWidth] = useState(0);
+  const slide = useRef(new Animated.Value(otOrder === 'jewish' ? 1 : 0)).current;
+  const slideText = useRef(new Animated.Value(otOrder === 'jewish' ? 1 : 0)).current;
+  useEffect(() => {
+    const toValue = otOrder === 'jewish' ? 1 : 0;
+    Animated.timing(slide, { toValue, duration: 200, useNativeDriver: true }).start();
+    // Cor do texto não suporta native driver, então usa um valor separado em paralelo
+    Animated.timing(slideText, { toValue, duration: 200, useNativeDriver: false }).start();
+  }, [otOrder]);
+  const pillWidth = Math.max(0, (segmentWidth - 2) / 2); // desconta a borda de 1px de cada lado
   useEffect(() => {
     if (groupBooks) {
       setRenderExtra(true);
@@ -78,19 +90,38 @@ export default function SettingsScreen({ navigation }: any) {
               }}
             >
               <Text style={[styles.label, { color: colors.text, marginBottom: 8 }]}>Ordem do Antigo Testamento</Text>
-              <View style={[styles.segment, { borderColor: colors.accentColor }]}>
-                {([['christian', 'Cristão'], ['jewish', 'Judaico']] as const).map(([value, label]) => {
-                  const active = otOrder === value;
-                  return (
-                    <TouchableOpacity
-                      key={value}
-                      style={[styles.segmentBtn, active && { backgroundColor: colors.accentColor }]}
-                      onPress={() => setOtOrder(value)}
+              <View
+                style={[styles.segment, { borderColor: colors.accentColor }]}
+                onLayout={e => setSegmentWidth(e.nativeEvent.layout.width)}
+              >
+                <Animated.View
+                  pointerEvents="none"
+                  style={[
+                    styles.segmentPill,
+                    {
+                      width: pillWidth,
+                      backgroundColor: colors.accentColor,
+                      transform: [{ translateX: slide.interpolate({ inputRange: [0, 1], outputRange: [0, pillWidth] }) }],
+                    },
+                  ]}
+                />
+                {([['christian', 'Cristão', 0], ['jewish', 'Judaico', 1]] as const).map(([value, label, index]) => (
+                  <TouchableOpacity key={value} style={styles.segmentBtn} onPress={() => setOtOrder(value)}>
+                    <Animated.Text
+                      style={[
+                        styles.segmentText,
+                        {
+                          color: slideText.interpolate({
+                            inputRange: [0, 1],
+                            outputRange: index === 0 ? ['#fff', colors.text] : [colors.text, '#fff'],
+                          }),
+                        },
+                      ]}
                     >
-                      <Text style={[styles.segmentText, { color: active ? '#fff' : colors.text }]}>{label}</Text>
-                    </TouchableOpacity>
-                  );
-                })}
+                      {label}
+                    </Animated.Text>
+                  </TouchableOpacity>
+                ))}
               </View>
               <Text style={[styles.help, { color: colors.textSecondary }]}>
                 {otOrder === 'jewish'
@@ -122,6 +153,7 @@ const styles = StyleSheet.create({
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
   label: { fontSize: 16, fontWeight: '500', flex: 1, paddingRight: 12 },
   segment: { flexDirection: 'row', borderWidth: 1, borderRadius: 8, overflow: 'hidden' },
+  segmentPill: { position: 'absolute', top: 0, bottom: 0, left: 0 },
   segmentBtn: { flex: 1, paddingVertical: 10, alignItems: 'center' },
   segmentText: { fontSize: 15, fontWeight: '600' },
   help: { fontSize: 13, lineHeight: 19, marginTop: 8 },
