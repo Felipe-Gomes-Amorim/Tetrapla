@@ -106,7 +106,9 @@ function headerTitle(work: FatherWork | undefined, chapter: FatherChapter | null
 function neighborLabel(parsed: ParsedWork, n: number): string {
   if (n === INTRO_N) return 'Introdução';
   if (n === NOTES_N) return 'Notas';
-  return parsed.chapters[n - 1]?.label ?? String(n);
+  const label = parsed.chapters[n - 1]?.label ?? String(n);
+  // Capítulos numerados seguem o modelo da Bíblia ("Cap. 4"); Saudação, Prefácio etc. mantêm o nome
+  return /^\d+$/.test(label) ? `Cap. ${label}` : label;
 }
 
 export default function FatherReaderScreen({ route, navigation }: any) {
