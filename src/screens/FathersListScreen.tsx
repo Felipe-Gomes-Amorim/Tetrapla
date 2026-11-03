@@ -15,10 +15,6 @@ import { subFont } from '../theme/fonts';
 
 const sections = getFatherGroups().map(g => ({ title: g.group, data: g.works }));
 
-function formatSize(kb: number) {
-  return kb >= 1000 ? `${(kb / 1024).toFixed(1).replace('.', ',')} MB` : `${kb} KB`;
-}
-
 const WorkRow = React.memo(function WorkRow({
   work, colors, onSelect,
 }: {
@@ -31,11 +27,9 @@ const WorkRow = React.memo(function WorkRow({
     >
       <View style={{ flex: 1 }}>
         <Text style={[styles.workTitle, { color: colors.text }]}>{work.title}</Text>
-        <Text style={[styles.workMeta, { color: colors.textSecondary }]}>
-          {work.author} · {work.chapterCount} cap. · {formatSize(work.sizeKB)}
-        </Text>
+        <Text style={[styles.workMeta, { color: colors.textSecondary }]} numberOfLines={1}>{work.author}</Text>
       </View>
-      <Ionicons name="chevron-forward" size={18} color={colors.textSecondary} />
+      <Text style={[styles.workChapters, { color: colors.textSecondary }]}>{work.chapterCount} cap.</Text>
     </TouchableOpacity>
   );
 });
@@ -257,6 +251,7 @@ const styles = StyleSheet.create({
   },
   workTitle: { fontSize: 16, marginBottom: 2 },
   workMeta: { fontSize: 12 },
+  workChapters: { fontSize: 12, marginLeft: 12 },
   chapterHeader: {
     flexDirection: 'row',
     alignItems: 'center',

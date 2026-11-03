@@ -16,9 +16,9 @@ import { subFont } from '../theme/fonts';
 const Tab = createBottomTabNavigator();
 
 const BAR_HEIGHT = 70;
-const CENTER_SIZE = 64;
+const CENTER_SIZE = 74;
 // Parte do botão central que sobe acima da barra; fica dentro do container para receber toques no Android
-const CENTER_RISE = 24;
+const CENTER_RISE = 14;
 const ICON_SIZE = 28;
 
 const TAB_META: Record<string, { label: string; icon: 'book' | 'library' }> = {
@@ -79,8 +79,8 @@ function CenterButton({ section, onPress }: { section: 'Bible' | 'Fathers'; onPr
       >
         <ProgressRing
           progress={percent}
-          size={50}
-          strokeWidth={4}
+          size={60}
+          strokeWidth={5}
           backgroundColor={colors.cardBackground}
           fillColor={accent}
         />
