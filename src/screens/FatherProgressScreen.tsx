@@ -6,7 +6,9 @@ import { Ionicons } from '@expo/vector-icons';
 import ProgressRing from '../components/ProgressRing';
 import { useTheme } from '../contexts/ThemeContext';
 import { subFont } from '../theme/fonts';
-import { getTotalProgress, getWorksProgress, WorkProgress } from '../data/fatherProgress';
+import { getTotalProgress, getWorksProgress } from '../data/fatherProgress';
+
+type WorkProgress = Awaited<ReturnType<typeof getWorksProgress>>[number];
 
 type Row =
   | { type: 'author'; key: string; title: string }

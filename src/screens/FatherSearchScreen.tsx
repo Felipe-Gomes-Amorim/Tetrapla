@@ -4,11 +4,9 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { subFont } from '../theme/fonts';
-import { searchFathers, FatherSearchResult } from '../data/fatherSearch';
+import { searchFathers, prepareFatherSearch, isFatherSearchReady, FatherSearchResult } from '../data/fatherSearch';
 
 const PAGE_SIZE = 50;
-// Se a primeira busca passar disso, avisamos que o índice está sendo montado
-const INDEX_NOTICE_DELAY_MS = 700;
 
 export default function FatherSearchScreen({ navigation }: any) {
   const { colors } = useTheme();
@@ -18,9 +16,9 @@ export default function FatherSearchScreen({ navigation }: any) {
   const [loading, setLoading] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [preparing, setPreparing] = useState(false);
+  const [indexProgress, setIndexProgress] = useState<{ done: number; total: number } | null>(null);
   // Identifica a busca atual: respostas de buscas antigas são ignoradas
   const searchId = useRef(0);
-  const firstSearchDone = useRef(false);
 
   useEffect(() => {
     const id = ++searchId.current;
@@ -33,25 +31,25 @@ export default function FatherSearchScreen({ navigation }: any) {
       return;
     }
 
-    let noticeTimer: ReturnType<typeof setTimeout> | undefined;
     const perform = async () => {
       setLoading(true);
       setLoadingMore(false);
-      if (!firstSearchDone.current) {
-        noticeTimer = setTimeout(() => {
-          if (id === searchId.current) setPreparing(true);
-        }, INDEX_NOTICE_DELAY_MS);
-      }
       try {
+        // Primeira busca: monta o índice mostrando o andamento
+        if (!isFatherSearchReady()) {
+          setPreparing(true);
+          await prepareFatherSearch((done, total) => {
+            if (id === searchId.current) setIndexProgress({ done, total });
+          });
+        }
+        if (id !== searchId.current) return;
         const res = await searchFathers(searchText, PAGE_SIZE, 0);
         if (id !== searchId.current) return;
-        firstSearchDone.current = true;
         setResults(res.results);
         setTotal(res.total);
       } catch (e) {
         console.error('Erro ao buscar nos Pais:', e);
       } finally {
-        if (noticeTimer) clearTimeout(noticeTimer);
         if (id === searchId.current) {
           setLoading(false);
           setPreparing(false);
@@ -60,10 +58,7 @@ export default function FatherSearchScreen({ navigation }: any) {
     };
 
     const timer = setTimeout(perform, 300);
-    return () => {
-      clearTimeout(timer);
-      if (noticeTimer) clearTimeout(noticeTimer);
-    };
+    return () => clearTimeout(timer);
   }, [searchText]);
 
   const loadMore = async () => {
@@ -134,7 +129,11 @@ export default function FatherSearchScreen({ navigation }: any) {
       {loading && (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={colors.accentColor} />
-          {preparing && <Text style={[styles.placeholder, { color: colors.textSecondary }]}>Preparando índice…</Text>}
+          {preparing && (
+            <Text style={[styles.placeholder, { color: colors.textSecondary }]}>
+              Preparando índice…{indexProgress ? ` ${indexProgress.done}/${indexProgress.total}` : ''}
+            </Text>
+          )}
         </View>
       )}
 
