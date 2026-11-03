@@ -15,6 +15,7 @@ export interface FatherWork {
 
 const IRENEU = 'Ireneu de Lião';
 const APOSTOLICOS = 'Pais Apostólicos';
+const JUSTINO = 'Justino Mártir';
 
 export const FATHER_WORKS: FatherWork[] = [
   { id: 'primeira-epistola-de-clemente', short: '1 Clemente', title: 'Primeira Epístola aos Coríntios', author: 'Clemente de Roma', group: APOSTOLICOS, sizeKB: 77, chapterCount: 59, asset: require('../../assets/fathers/primeira-epistola-de-clemente.md') },
@@ -30,6 +31,11 @@ export const FATHER_WORKS: FatherWork[] = [
   { id: 'inacio-a-policarpo', short: 'Inác. Policarpo', title: 'Epístola a Policarpo', author: 'Inácio de Antioquia', group: APOSTOLICOS, sizeKB: 9, chapterCount: 9, asset: require('../../assets/fathers/inacio-a-policarpo.md') },
   { id: 'epistola-de-barnabe', short: 'Barnabé', title: 'Epístola de Barnabé', author: 'Atribuída a Barnabé', group: APOSTOLICOS, sizeKB: 57, chapterCount: 21, asset: require('../../assets/fathers/epistola-de-barnabe.md') },
   { id: 'fragmentos-de-papias', short: 'Papias', title: 'Fragmentos de Papias', author: 'Papias de Hierápolis', group: APOSTOLICOS, sizeKB: 16, chapterCount: 10, asset: require('../../assets/fathers/fragmentos-de-papias.md') },
+  { id: 'justino-primeira-apologia', short: '1 Apologia', title: 'Primeira Apologia', author: 'Justino Mártir', group: JUSTINO, sizeKB: 128, chapterCount: 71, asset: require('../../assets/fathers/justino-primeira-apologia.md') },
+  { id: 'justino-segunda-apologia', short: '2 Apologia', title: 'Segunda Apologia', author: 'Justino Mártir', group: JUSTINO, sizeKB: 30, chapterCount: 15, asset: require('../../assets/fathers/justino-segunda-apologia.md') },
+  { id: 'justino-dialogo-com-trifao', short: 'Diál. Trifão', title: 'Diálogo com Trifão', author: 'Justino Mártir', group: JUSTINO, sizeKB: 412, chapterCount: 142, asset: require('../../assets/fathers/justino-dialogo-com-trifao.md') },
+  { id: 'justino-sobre-a-ressurreicao', short: 'Ressurreição', title: 'Sobre a Ressurreição (fragmentos)', author: 'Justino Mártir', group: JUSTINO, sizeKB: 30, chapterCount: 10, asset: require('../../assets/fathers/justino-sobre-a-ressurreicao.md') },
+  { id: 'martirio-de-justino', short: 'Mart. Justino', title: 'Martírio de Justino', author: 'Atas do martírio', group: JUSTINO, sizeKB: 9, chapterCount: 5, asset: require('../../assets/fathers/martirio-de-justino.md') },
   { id: 'contra-as-heresias-livro-1', short: 'Ireneu 1', shortSep: '.', title: 'Contra as Heresias, Livro 1', author: IRENEU, group: IRENEU, sizeKB: 204, chapterCount: 32, asset: require('../../assets/fathers/contra-as-heresias-livro-1.md') },
   { id: 'contra-as-heresias-livro-2', short: 'Ireneu 2', shortSep: '.', title: 'Contra as Heresias, Livro 2', author: IRENEU, group: IRENEU, sizeKB: 267, chapterCount: 36, asset: require('../../assets/fathers/contra-as-heresias-livro-2.md') },
   { id: 'contra-as-heresias-livro-3', short: 'Ireneu 3', shortSep: '.', title: 'Contra as Heresias, Livro 3', author: IRENEU, group: IRENEU, sizeKB: 223, chapterCount: 26, asset: require('../../assets/fathers/contra-as-heresias-livro-3.md') },
