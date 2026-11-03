@@ -249,6 +249,56 @@ export async function ensureReadChaptersDir() {
   }
 }
 
+// Capítulos lidos por livro, lidos do disco uma vez e guardados em memória.
+// markChapterAsRead/unmarkChapterAsRead invalidam o cache (e incrementam a versão), então
+// as telas podem consultar o progresso a cada foco sem tocar no disco e pular o refresh
+// quando getReadProgressVersion() não mudou.
+let readMapCache: Record<string, Set<number>> | null = null;
+let readMapLoading: Promise<Record<string, Set<number>>> | null = null;
+let readProgressVersion = 0;
+
+export function getReadProgressVersion(): number {
+  return readProgressVersion;
+}
+
+function invalidateReadMap() {
+  readMapCache = null;
+  readMapLoading = null;
+  readProgressVersion++;
+}
+
+async function loadReadMap(): Promise<Record<string, Set<number>>> {
+  if (readMapCache) return readMapCache;
+  if (readMapLoading) return readMapLoading;
+  const versionAtStart = readProgressVersion;
+  const loading = (async () => {
+    let readFiles: string[] = [];
+    try {
+      await ensureReadChaptersDir();
+      readFiles = await FileSystem.readDirectoryAsync(READ_CHAPTERS_DIR);
+    } catch (e) {
+      // Diretório vazio
+    }
+    // Parsear arquivos para um mapa {book: set(chapters)}
+    const map: Record<string, Set<number>> = {};
+    for (const file of readFiles) {
+      const match = file.match(/^([A-Z0-9]+)_(\d+)\.txt$/);
+      if (match) {
+        const bookCode = match[1];
+        if (!map[bookCode]) map[bookCode] = new Set();
+        map[bookCode].add(parseInt(match[2], 10));
+      }
+    }
+    // Se algo foi marcado/desmarcado durante a leitura, o resultado pode estar velho: não guarda
+    if (versionAtStart === readProgressVersion) readMapCache = map;
+    return map;
+  })().finally(() => {
+    if (readMapLoading === loading) readMapLoading = null;
+  });
+  readMapLoading = loading;
+  return loading;
+}
+
 export async function markChapterAsRead(bookCode: string, chapter: number) {
   try {
     await ensureReadChaptersDir();
@@ -258,6 +308,7 @@ export async function markChapterAsRead(bookCode: string, chapter: number) {
   } catch (e) {
     console.error(`Erro ao marcar ${bookCode}_${chapter} como lido:`, e);
   }
+  invalidateReadMap();
 }
 
 export async function unmarkChapterAsRead(bookCode: string, chapter: number) {
@@ -268,16 +319,25 @@ export async function unmarkChapterAsRead(bookCode: string, chapter: number) {
   } catch (e) {
     console.error(`Erro ao desmarcar ${bookCode}_${chapter}:`, e);
   }
+  invalidateReadMap();
 }
 
 export async function isChapterRead(bookCode: string, chapter: number): Promise<boolean> {
   try {
-    const filePath = `${READ_CHAPTERS_DIR}${bookCode}_${chapter}.txt`;
-    const fileInfo = await FileSystem.getInfoAsync(filePath);
-    return fileInfo.exists;
+    return (await loadReadMap())[bookCode]?.has(chapter) ?? false;
   } catch (e) {
     console.error(`Erro ao verificar se ${bookCode}_${chapter} foi lido:`, e);
     return false;
+  }
+}
+
+// Todos os capítulos lidos de um livro (uma leitura, em vez de um getInfoAsync por capítulo)
+export async function getReadChaptersForBook(bookCode: string): Promise<Set<number>> {
+  try {
+    return new Set((await loadReadMap())[bookCode] ?? []);
+  } catch (e) {
+    console.error(`Erro ao obter capítulos lidos de ${bookCode}:`, e);
+    return new Set();
   }
 }
 
@@ -289,16 +349,10 @@ export async function getTotalReadProgress(includeDeutero: boolean = true): Prom
     }
 
     // Contar capítulos lidos
+    const map = await loadReadMap();
     let readChapters = 0;
-    try {
-      await ensureReadChaptersDir();
-      const files = await FileSystem.readDirectoryAsync(READ_CHAPTERS_DIR);
-      readChapters = files.filter(f => {
-        const code = f.match(/^([A-Z0-9]+)_\d+\.txt$/)?.[1];
-        return !!code && (includeDeutero || !isApocryphal(code));
-      }).length;
-    } catch (e) {
-      // Diretório vazio
+    for (const [code, chapters] of Object.entries(map)) {
+      if (includeDeutero || !isApocryphal(code)) readChapters += chapters.size;
     }
 
     return (readChapters / totalChapters) * 100;
@@ -310,35 +364,13 @@ export async function getTotalReadProgress(includeDeutero: boolean = true): Prom
 
 export async function getBooksWithReadProgress(includeDeutero: boolean = true) {
   try {
-    let readFiles: string[] = [];
-    try {
-      await ensureReadChaptersDir();
-      readFiles = await FileSystem.readDirectoryAsync(READ_CHAPTERS_DIR);
-    } catch (e) {
-      // Diretório vazio
-    }
-
-    // Parsear arquivos para um mapa {book: set(chapters)}
-    const readMap: Record<string, Set<number>> = {};
-    for (const file of readFiles) {
-      const match = file.match(/^([A-Z0-9]+)_(\d+)\.txt$/);
-      if (match) {
-        const bookCode = match[1];
-        const chapter = parseInt(match[2], 10);
-        if (!readMap[bookCode]) readMap[bookCode] = new Set();
-        readMap[bookCode].add(chapter);
-      }
-    }
-
-    // Mapear para resultado
-    const result = getVisibleBooks(includeDeutero).map(book => ({
+    const readMap = await loadReadMap();
+    return getVisibleBooks(includeDeutero).map(book => ({
       code: book.code,
       name: book.name,
       totalChapters: book.chapters,
       readChapters: readMap[book.code]?.size ?? 0,
     }));
-
-    return result;
   } catch (e) {
     console.error('Erro ao obter progresso por livro:', e);
     return getVisibleBooks(includeDeutero).map(book => ({

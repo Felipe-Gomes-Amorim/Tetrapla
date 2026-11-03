@@ -97,16 +97,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
     await saveThemePreference(newMode);
   };
 
-  const colors = mode === 'light' ? { ...LightColors, isDark: false } : { ...DarkColors, isDark: true };
+  // Objetos estáveis: só mudam quando o tema muda (permite React.memo nas listas)
+  const colors = useMemo(
+    () => (mode === 'light' ? { ...LightColors, isDark: false } : { ...DarkColors, isDark: true }),
+    [mode]
+  );
   const isDark = mode === 'dark';
 
-  const value: ThemeContextType = {
-    isDark,
-    mode,
-    colors,
-    toggleTheme,
-    setMode,
-  };
+  const value: ThemeContextType = useMemo(
+    () => ({ isDark, mode, colors, toggleTheme, setMode }),
+    [isDark, mode, colors]
+  );
 
   return (
     <ThemeContext.Provider value={value}>

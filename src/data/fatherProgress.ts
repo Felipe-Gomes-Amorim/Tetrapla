@@ -11,6 +11,12 @@ type ProgressMap = Record<string, number[]>;
 let cache: ProgressMap | null = null;
 let loading: Promise<ProgressMap> | null = null;
 let writeQueue: Promise<void> = Promise.resolve();
+let progressVersion = 0;
+
+// Muda a cada marcação/desmarcação: as telas usam para pular o refresh quando nada mudou
+export function getFatherProgressVersion(): number {
+  return progressVersion;
+}
 
 async function readFromDisk(): Promise<ProgressMap> {
   try {
@@ -71,6 +77,7 @@ export async function markChapterRead(workId: string, n: number): Promise<void> 
   const list = map[workId] ?? [];
   if (list.includes(n)) return;
   map[workId] = [...list, n].sort((a, b) => a - b);
+  progressVersion++;
   await persist();
   emitProgressChanged();
 }
@@ -80,6 +87,7 @@ export async function unmarkChapterRead(workId: string, n: number): Promise<void
   const list = map[workId];
   if (!list || !list.includes(n)) return;
   map[workId] = list.filter(x => x !== n);
+  progressVersion++;
   await persist();
   emitProgressChanged();
 }
