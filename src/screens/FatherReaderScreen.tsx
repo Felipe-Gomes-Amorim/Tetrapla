@@ -1,15 +1,16 @@
 import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import Markdown from 'react-native-markdown-display';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
-import { getFatherWork } from '../data/fathers';
+import { getFatherWork, FatherWork } from '../data/fathers';
 import { getWorkChapters, getCachedWork, neighborChapter, INTRO_N, NOTES_N, FatherChapter, ParsedWork } from '../data/fatherChapters';
 import { isChapterRead, markChapterRead, unmarkChapterRead } from '../data/fatherProgress';
 import { foldText } from '../data/fatherSearch';
 import { splitMarkdown, MdBlock } from '../data/markdownBlocks';
-import { readingFont, subFont } from '../theme/fonts';
+import { brandFont, readingFont, subFont } from '../theme/fonts';
 import FontSizeModal from '../components/FontSizeModal';
 import type { ThemeColors } from '../contexts/ThemeContext';
 
@@ -92,6 +93,15 @@ const BlockView = React.memo(function BlockView({
   return <Markdown style={mdStyles}>{block.text}</Markdown>;
 });
 
+// Cabeçalho curto, como o da Bíblia: 'Inác. Efésios 3', 'Ireneu 1.12'
+function headerTitle(work: FatherWork | undefined, chapter: FatherChapter | null): string {
+  if (!work) return 'Pais da Igreja';
+  if (!chapter) return work.short;
+  if (chapter.n >= 1 && /^\d+$/.test(chapter.label)) return `${work.short}${work.shortSep ?? ' '}${chapter.label}`;
+  const abbrev: Record<string, string> = { 'Saudação': 'Saud.', 'Prefácio': 'Pref.', 'Introdução': 'Intro' };
+  return `${work.short} ${abbrev[chapter.label] ?? chapter.label}`;
+}
+
 // Rótulo curto do capítulo vizinho para os botões de navegação
 function neighborLabel(parsed: ParsedWork, n: number): string {
   if (n === INTRO_N) return 'Introdução';
@@ -124,12 +134,11 @@ export default function FatherReaderScreen({ route, navigation }: any) {
 
   // Cabeçalho: nome do escrito + capítulo, com o botão de tamanho da fonte
   useEffect(() => {
-    const suffix = chapter ? ` · ${chapter.title}` : '';
     navigation.setOptions({
-      title: `${work?.title ?? 'Pais da Igreja'}${suffix}`,
+      title: headerTitle(work, chapter),
       headerStyle: { backgroundColor: colors.headerBackground },
       headerTintColor: colors.accentColor,
-      headerTitleStyle: { color: colors.text, ...subFont(), fontSize: 15 },
+      headerTitleStyle: { color: colors.text, ...brandFont() },
       headerRight: () => (
         <TouchableOpacity style={styles.headerBtn} onPress={() => setFontSizeModalVisible(true)}>
           <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.accentColor }}>A</Text>
@@ -245,9 +254,14 @@ export default function FatherReaderScreen({ route, navigation }: any) {
   const next = neighborChapter(parsed, chapterN, 1);
 
   return (
-    <View style={[styles.container, { backgroundColor: colors.background }]}>
+    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['left', 'right', 'bottom']}>
       <FlatList
         ref={flatListRef}
+        ListHeaderComponent={
+          chapter?.subtitle ? (
+            <Text style={[styles.subtitle, { color: colors.accentColor }, subFont()]}>{chapter.subtitle}</Text>
+          ) : undefined
+        }
         data={blocks}
         keyExtractor={b => b.key}
         renderItem={renderItem}
@@ -326,7 +340,7 @@ export default function FatherReaderScreen({ route, navigation }: any) {
           borderColor: colors.borderColor,
         }}
       />
-    </View>
+    </SafeAreaView>
   );
 }
 
@@ -334,6 +348,7 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
   content: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 32 },
+  subtitle: { fontSize: 18, lineHeight: 26, marginTop: 6, marginBottom: 14 },
   note: { borderLeftWidth: 2, paddingLeft: 10, marginTop: -4, marginBottom: 12, marginLeft: 4 },
   errorText: { fontSize: 15, marginBottom: 12, textAlign: 'center' },
   retryBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },

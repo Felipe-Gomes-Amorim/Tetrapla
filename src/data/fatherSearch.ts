@@ -68,7 +68,7 @@ export function prepareFatherSearch(onProgress?: (done: number, total: number) =
       for (const w of FATHER_WORKS) {
         const parsed = await getWorkChapters(w.id);
         for (const ch of parsed.chapters) {
-          const plain = toPlain(ch.content);
+          const plain = toPlain((ch.subtitle ? ch.subtitle + '\n\n' : '') + ch.content);
           entries.push({
             workId: w.id,
             workTitle: w.title,
