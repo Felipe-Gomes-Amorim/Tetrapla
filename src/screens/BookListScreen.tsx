@@ -10,6 +10,7 @@ import { useSettings } from '../contexts/SettingsContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ProgressRing from '../components/ProgressRing';
+import OutlinedIcon from '../components/OutlinedIcon';
 import { useTheme } from '../contexts/ThemeContext';
 import { brandFont, subFont } from '../theme/fonts';
 import { buildGroupedRows, BookListRow } from '../data/bookGroups';
@@ -202,7 +203,7 @@ export default function BookListScreen({ navigation }: any) {
               <Ionicons name="settings-outline" size={26} color={colors.accentColor} />
             </TouchableOpacity>
             <TouchableOpacity style={styles.topBtn} onPress={() => navigation.navigate('Search')}>
-              <Ionicons name="search-outline" size={26} color={colors.accentColor} />
+              <OutlinedIcon name="search" size={24} outlineColor={colors.accentColor} fillColor={colors.background} />
             </TouchableOpacity>
           </View>
         </View>
