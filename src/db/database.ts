@@ -53,25 +53,56 @@ export async function getPreface(db: SQLite.SQLiteDatabase, book: string) {
   );
 }
 
-export async function searchVerses(
-  db: SQLite.SQLiteDatabase,
-  searchText: string,
-  includeDeutero: boolean = true
-) {
+// Filtro compartilhado por searchVerses/countSearchVerses
+function buildSearchFilter(searchText: string, includeDeutero: boolean) {
   const apocrypha = Array.from(APOCRYPHAL_BOOKS);
   const exclude = includeDeutero
     ? ''
     : `AND book NOT IN (${apocrypha.map(() => '?').join(',')})`;
+  return {
+    where: `pt LIKE ? ${exclude}`,
+    params: [`%${searchText}%`, ...(includeDeutero ? [] : apocrypha)],
+  };
+}
+
+// Ordem canônica (a do array BOOKS), gerada a partir dele
+function bookOrderCase(): string {
+  return `CASE book ${BOOKS.map((b, i) => `WHEN '${b.code}' THEN ${i}`).join(' ')} ELSE ${BOOKS.length} END`;
+}
+
+export const SEARCH_PAGE_SIZE = 50;
+
+export async function searchVerses(
+  db: SQLite.SQLiteDatabase,
+  searchText: string,
+  includeDeutero: boolean = true,
+  limit: number = SEARCH_PAGE_SIZE,
+  offset: number = 0
+) {
+  const { where, params } = buildSearchFilter(searchText, includeDeutero);
   return db.getAllAsync<{
     book: string; chapter: number; verse: number; pt: string;
   }>(
     `SELECT book, chapter, verse, pt
      FROM verses
-     WHERE pt LIKE ? ${exclude}
-     ORDER BY book, chapter, verse
-     LIMIT 100`,
-    [`%${searchText}%`, ...(includeDeutero ? [] : apocrypha)]
+     WHERE ${where}
+     ORDER BY ${bookOrderCase()}, chapter, verse
+     LIMIT ? OFFSET ?`,
+    [...params, limit, offset]
   );
+}
+
+export async function countSearchVerses(
+  db: SQLite.SQLiteDatabase,
+  searchText: string,
+  includeDeutero: boolean = true
+): Promise<number> {
+  const { where, params } = buildSearchFilter(searchText, includeDeutero);
+  const row = await db.getFirstAsync<{ n: number }>(
+    `SELECT COUNT(*) AS n FROM verses WHERE ${where}`,
+    params
+  );
+  return row?.n ?? 0;
 }
 
 export const BOOKS = [

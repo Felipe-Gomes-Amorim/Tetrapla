@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, FlatList, TouchableOpacity,
   StyleSheet, TextInput, ActivityIndicator
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
-import { searchVerses, BOOKS } from '../db/database';
+import { searchVerses, countSearchVerses, SEARCH_PAGE_SIZE, BOOKS } from '../db/database';
 import { useSettings } from '../contexts/SettingsContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
@@ -17,29 +17,58 @@ export default function SearchScreen({ navigation }: any) {
   const { showDeuterocanonical } = useSettings();
   const [searchText, setSearchText] = useState('');
   const [results, setResults] = useState<any[]>([]);
+  const [total, setTotal] = useState<number | null>(null);
   const [loading, setLoading] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  // Identifica a busca atual: respostas de buscas antigas são ignoradas
+  const searchId = useRef(0);
 
   useEffect(() => {
+    const id = ++searchId.current;
     if (searchText.trim().length < 2) {
       setResults([]);
+      setTotal(null);
+      setLoading(false);
+      setLoadingMore(false);
       return;
     }
 
     const performSearch = async () => {
       setLoading(true);
+      setLoadingMore(false);
       try {
-        const rows = await searchVerses(db, searchText, showDeuterocanonical);
+        const [rows, count] = await Promise.all([
+          searchVerses(db, searchText, showDeuterocanonical, SEARCH_PAGE_SIZE, 0),
+          countSearchVerses(db, searchText, showDeuterocanonical),
+        ]);
+        if (id !== searchId.current) return;
         setResults(rows);
+        setTotal(count);
       } catch (e) {
         console.error('Erro ao buscar versículos:', e);
       } finally {
-        setLoading(false);
+        if (id === searchId.current) setLoading(false);
       }
     };
 
     const timer = setTimeout(performSearch, 300);
     return () => clearTimeout(timer);
   }, [searchText, showDeuterocanonical]);
+
+  const loadMore = async () => {
+    if (loading || loadingMore || total === null || results.length >= total) return;
+    const id = searchId.current;
+    setLoadingMore(true);
+    try {
+      const rows = await searchVerses(db, searchText, showDeuterocanonical, SEARCH_PAGE_SIZE, results.length);
+      if (id !== searchId.current) return;
+      setResults(prev => [...prev, ...rows]);
+    } catch (e) {
+      console.error('Erro ao carregar mais versículos:', e);
+    } finally {
+      if (id === searchId.current) setLoadingMore(false);
+    }
+  };
 
   // Função para encontrar o nome do livro pelo código
   const getBookName = (code: string) => {
@@ -51,7 +80,8 @@ export default function SearchScreen({ navigation }: any) {
   const renderHighlightedText = (text: string, highlight: string) => {
     if (!highlight.trim()) return text;
 
-    const parts = text.split(new RegExp(`(${highlight})`, 'gi'));
+    const escaped = highlight.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const parts = text.split(new RegExp(`(${escaped})`, 'gi'));
     return (
       <Text style={[styles.resultText, { color: colors.textSecondary }]} numberOfLines={2}>
         {parts.map((part, idx) =>
@@ -108,6 +138,12 @@ export default function SearchScreen({ navigation }: any) {
         </View>
       )}
 
+      {!loading && total !== null && total > 0 && searchText.trim().length >= 2 && (
+        <Text style={[styles.totalText, { color: colors.textSecondary, borderBottomColor: colors.borderColor }]}>
+          {total.toLocaleString('pt-BR')} {total === 1 ? 'versículo encontrado' : 'versículos encontrados'}
+        </Text>
+      )}
+
       {!loading && searchText.trim().length >= 2 && results.length === 0 && (
         <View style={styles.center}>
           <Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhum versículo encontrado</Text>
@@ -118,6 +154,15 @@ export default function SearchScreen({ navigation }: any) {
         data={results}
         keyExtractor={(item, idx) => `${item.book}-${item.chapter}-${item.verse}-${idx}`}
         contentContainerStyle={styles.resultsList}
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        initialNumToRender={15}
+        maxToRenderPerBatch={15}
+        windowSize={7}
+        keyboardShouldPersistTaps="handled"
+        ListFooterComponent={
+          loadingMore ? <ActivityIndicator style={styles.footerLoader} color={colors.accentColor} /> : undefined
+        }
         renderItem={({ item }) => (
           <TouchableOpacity
             style={[styles.resultRow, { borderBottomColor: colors.borderColor }]}
@@ -190,6 +235,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#888',
   },
+  totalText: {
+    fontSize: 13,
+    paddingHorizontal: 16,
+    paddingBottom: 8,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  footerLoader: { paddingVertical: 16 },
   resultsList: {
     paddingHorizontal: 0,
   },
