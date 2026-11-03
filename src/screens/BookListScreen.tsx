@@ -238,9 +238,9 @@ export default function BookListScreen({ navigation }: any) {
     <ChapterButton chapter={item} isRead={readChapters.has(item)} colors={colors} onOpen={openChapter} />
   ), [readChapters, colors, openChapter]);
 
-  if (selectedBook) {
-
-    return (
+  // A lista de livros fica montada (só oculta) enquanto se vê a grade de capítulos,
+  // assim o scroll e a busca são mantidos ao voltar
+  const chaptersView = selectedBook ? (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
         {/* Header com título */}
         <View style={[styles.chapterHeaderContainer, { borderBottomColor: colors.borderColor }]}>
@@ -285,12 +285,15 @@ export default function BookListScreen({ navigation }: any) {
           removeClippedSubviews
         />
       </SafeAreaView>
-    );
-  }
+  ) : null;
 
-  if (!selectedBook) {
-    return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+  return (
+    <>
+      {chaptersView}
+      <SafeAreaView
+        style={[styles.container, { backgroundColor: colors.background }, selectedBook && styles.hidden]}
+        edges={['top', 'left', 'right']}
+      >
         <View style={[styles.titleBarContainer, { backgroundColor: colors.background, borderBottomColor: colors.borderColor }]}>
           <TouchableOpacity onPress={toggleTheme}>
             <Text style={[styles.title, { color: colors.text }, brandFont()]}>Tetrapla</Text>
@@ -328,12 +331,13 @@ export default function BookListScreen({ navigation }: any) {
           ListEmptyComponent={<Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhum livro encontrado</Text>}
         />
       </SafeAreaView>
-    );
-  }
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+  hidden: { display: 'none' },
   titleBarContainer: {
     flexDirection: 'row',
     alignItems: 'center',

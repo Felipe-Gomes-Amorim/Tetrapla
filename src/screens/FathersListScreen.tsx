@@ -143,9 +143,11 @@ export default function FathersListScreen({ navigation }: any) {
   );
 
   // Grade de capítulos do escrito escolhido
+  // (a lista de escritos fica montada, só oculta, para manter o scroll ao voltar)
+  let chaptersView: React.ReactNode = null;
   if (selectedWork) {
     const chapters = parsed?.chapters ?? [];
-    return (
+    chaptersView = (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
         <View style={[styles.chapterHeader, { borderBottomColor: colors.borderColor }]}>
           <TouchableOpacity onPress={() => setSelectedWork(null)} style={styles.headerBtn}>
@@ -207,7 +209,12 @@ export default function FathersListScreen({ navigation }: any) {
 
   // Lista de escritos, agrupada
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+    <>
+    {chaptersView}
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: colors.background }, selectedWork && styles.hidden]}
+      edges={['top', 'left', 'right']}
+    >
       <View style={[styles.titleBar, { borderBottomColor: colors.borderColor }]}>
         <Text style={[styles.title, { color: colors.text }, subFont()]}>Pais da Igreja</Text>
         {topButtons}
@@ -224,11 +231,13 @@ export default function FathersListScreen({ navigation }: any) {
         initialNumToRender={20}
       />
     </SafeAreaView>
+    </>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1 },
+  hidden: { display: 'none' },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
   titleBar: {
     flexDirection: 'row',
