@@ -12,11 +12,12 @@ import { Ionicons } from '@expo/vector-icons';
 import ProgressRing from '../components/ProgressRing';
 import { useTheme } from '../contexts/ThemeContext';
 import { brandFont, subFont } from '../theme/fonts';
+import { buildGroupedRows, BookListRow } from '../data/bookGroups';
 
 export default function BookListScreen({ navigation }: any) {
   const { colors, toggleTheme } = useTheme();
   const db = useSQLiteContext();
-  const { showDeuterocanonical } = useSettings();
+  const { showDeuterocanonical, groupBooks, otOrder } = useSettings();
   const [selectedBook, setSelectedBook] = useState<typeof BOOKS[0] | null>(null);
   const [hasPreface, setHasPreface] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -180,12 +181,12 @@ export default function BookListScreen({ navigation }: any) {
       text.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 
     // Filtro de livros pelo texto de busca (case-insensitive e sem acentos)
-    const filteredBooks = BOOKS.filter(b =>
-      (showDeuterocanonical || !isApocryphal(b.code)) &&
-      removeAccents(b.name.toLowerCase()).includes(
-        removeAccents(searchText.toLowerCase())
-      )
-    );
+    const matchesSearch = (b: typeof BOOKS[0]) =>
+      removeAccents(b.name.toLowerCase()).includes(removeAccents(searchText.toLowerCase()));
+    const rows: BookListRow[] = groupBooks
+      ? buildGroupedRows(otOrder, showDeuterocanonical, matchesSearch)
+      : BOOKS.filter(b => (showDeuterocanonical || !isApocryphal(b.code)) && matchesSearch(b))
+          .map(book => ({ type: 'book' as const, key: book.code, book }));
 
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right', 'bottom']}>
@@ -219,9 +220,17 @@ export default function BookListScreen({ navigation }: any) {
         </View>
         <FlatList
           key="books"
-          data={filteredBooks}
-          keyExtractor={b => b.code}
-          renderItem={({ item }) => {
+          data={rows}
+          keyExtractor={r => r.key}
+          renderItem={({ item: row }) => {
+            if (row.type === 'header') {
+              return (
+                <View style={[styles.groupHeader, { backgroundColor: colors.background, borderBottomColor: colors.borderColor }]}>
+                  <Text style={[styles.groupHeaderText, { color: colors.accentColor }, subFont()]}>{row.title}</Text>
+                </View>
+              );
+            }
+            const item = row.book;
             const progress = booksProgress.get(item.code);
             let progressPercent = 0;
             
@@ -283,6 +292,8 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
   },
   title: { fontSize: 22, fontWeight: '600' },
+  groupHeader: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 6, borderBottomWidth: 1 },
+  groupHeaderText: { fontSize: 15 },
   chapterHeaderContainer: {
     flexDirection: 'row',
     alignItems: 'center',
