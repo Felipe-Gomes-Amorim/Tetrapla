@@ -1,12 +1,16 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react';
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
 import Markdown from 'react-native-markdown-display';
 import * as FileSystem from 'expo-file-system/legacy';
+import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { getFatherWork } from '../data/fathers';
-import { loadAssetText } from '../data/fatherText';
+import { getWorkChapters, getCachedWork, neighborChapter, INTRO_N, NOTES_N, FatherChapter, ParsedWork } from '../data/fatherChapters';
+import { isChapterRead, markChapterRead, unmarkChapterRead } from '../data/fatherProgress';
+import { foldText } from '../data/fatherSearch';
 import { splitMarkdown, MdBlock } from '../data/markdownBlocks';
 import { readingFont, subFont } from '../theme/fonts';
+import FontSizeModal from '../components/FontSizeModal';
 import type { ThemeColors } from '../contexts/ThemeContext';
 
 // Estilos do Markdown derivados do tema e do tamanho da fonte do corpo
@@ -88,53 +92,121 @@ const BlockView = React.memo(function BlockView({
   return <Markdown style={mdStyles}>{block.text}</Markdown>;
 });
 
+// Rótulo curto do capítulo vizinho para os botões de navegação
+function neighborLabel(parsed: ParsedWork, n: number): string {
+  if (n === INTRO_N) return 'Introdução';
+  if (n === NOTES_N) return 'Notas';
+  return parsed.chapters[n - 1]?.label ?? String(n);
+}
+
 export default function FatherReaderScreen({ route, navigation }: any) {
   const { colors } = useTheme();
   const id: string = route.params?.id;
+  const chapterN: number = route.params?.chapter ?? 1;
+  const highlight: string | undefined = route.params?.highlight;
   const work = getFatherWork(id);
-  const [blocks, setBlocks] = useState<MdBlock[] | null>(null);
+  const [parsed, setParsed] = useState<ParsedWork | null>(getCachedWork(id) ?? null);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
   const [fontSize, setFontSize] = useState(16);
+  const [fontSizeModalVisible, setFontSizeModalVisible] = useState(false);
+  const [isRead, setIsRead] = useState(false);
+  const flatListRef = useRef<FlatList>(null);
 
-  // Cabeçalho com o título do escrito e as cores do tema
+  const chapter: FatherChapter | null = useMemo(() => {
+    if (!parsed) return null;
+    if (chapterN === INTRO_N) return parsed.intro;
+    if (chapterN === NOTES_N) return parsed.notes;
+    return parsed.chapters[chapterN - 1] ?? null;
+  }, [parsed, chapterN]);
+
+  const blocks = useMemo(() => (chapter ? splitMarkdown(chapter.content) : null), [chapter]);
+
+  // Cabeçalho: nome do escrito + capítulo, com o botão de tamanho da fonte
   useEffect(() => {
+    const suffix = chapter ? ` · ${chapter.title}` : '';
     navigation.setOptions({
-      title: work?.title ?? 'Pais da Igreja',
+      title: `${work?.title ?? 'Pais da Igreja'}${suffix}`,
       headerStyle: { backgroundColor: colors.headerBackground },
       headerTintColor: colors.accentColor,
-      headerTitleStyle: { color: colors.text, ...subFont(), fontSize: 16 },
+      headerTitleStyle: { color: colors.text, ...subFont(), fontSize: 15 },
+      headerRight: () => (
+        <TouchableOpacity style={styles.headerBtn} onPress={() => setFontSizeModalVisible(true)}>
+          <Text style={{ fontSize: 24, fontWeight: 'bold', color: colors.accentColor }}>A</Text>
+        </TouchableOpacity>
+      ),
     });
-  }, [navigation, work, colors]);
+  }, [navigation, work, chapter, colors]);
 
-  // Usa o mesmo tamanho de fonte salvo pelo leitor da Bíblia, se existir
+  // Mesmo tamanho de fonte (fontsize.txt) do leitor da Bíblia
   useEffect(() => {
     FileSystem.readAsStringAsync(FileSystem.documentDirectory + 'fontsize.txt')
       .then(content => {
         const size = parseInt(content, 10);
-        if (size >= 12 && size <= 40) setFontSize(size);
+        if (size > 0) setFontSize(size);
       })
       .catch(() => { /* sem preferência salva */ });
   }, []);
 
+  const saveFontSize = async (size: number) => {
+    setFontSize(size);
+    try {
+      await FileSystem.writeAsStringAsync(FileSystem.documentDirectory + 'fontsize.txt', String(size));
+    } catch (e) {
+      console.error('Erro ao salvar fontSize:', e);
+    }
+  };
+
   useEffect(() => {
     let active = true;
-    setBlocks(null);
     setError(false);
     if (!work) {
       setError(true);
       return;
     }
-    loadAssetText(work.asset)
-      .then(text => {
-        if (active) setBlocks(splitMarkdown(text));
-      })
+    getWorkChapters(work.id)
+      .then(p => { if (active) setParsed(p); })
       .catch(e => {
         console.error('Erro ao carregar escrito:', e);
         if (active) setError(true);
       });
     return () => { active = false; };
   }, [id, reloadKey]);
+
+  // Marcação de leitura (só capítulos 1..N contam)
+  useEffect(() => {
+    if (chapterN < 1) { setIsRead(false); return; }
+    isChapterRead(id, chapterN).then(setIsRead).catch(() => setIsRead(false));
+  }, [id, chapterN]);
+
+  const toggleRead = async () => {
+    if (chapterN < 1) return;
+    const next = !isRead;
+    setIsRead(next);
+    if (next) await markChapterRead(id, chapterN);
+    else await unmarkChapterRead(id, chapterN);
+  };
+
+  const goChapter = (target: number | null) => {
+    if (target === null) return;
+    navigation.replace('FatherReader', { id, chapter: target });
+  };
+
+  // Vindo da pesquisa: rola até o bloco com o termo
+  const highlightIndex = useMemo(() => {
+    if (!highlight || !blocks) return -1;
+    const q = foldText(highlight.trim());
+    if (!q) return -1;
+    return blocks.findIndex(b => b.kind === 'md' && foldText(b.text).includes(q));
+  }, [highlight, blocks]);
+
+  useEffect(() => {
+    if (highlightIndex <= 0) return;
+    const t = setTimeout(() => {
+      flatListRef.current?.scrollToIndex({ index: highlightIndex, animated: false, viewPosition: 0 });
+    }, 300);
+    return () => clearTimeout(t);
+  }, [highlightIndex]);
 
   const mdStyles = useMemo(() => buildMarkdownStyles(colors, fontSize), [colors, fontSize]);
   const noteStyles = useMemo(() => buildNoteStyles(colors, fontSize), [colors, fontSize]);
@@ -146,13 +218,13 @@ export default function FatherReaderScreen({ route, navigation }: any) {
     [mdStyles, noteStyles, colors.borderColor]
   );
 
-  if (error) {
+  if (error || (parsed && !chapter)) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <Text style={[styles.errorText, { color: colors.textSecondary }]}>
-          {work ? 'Não foi possível carregar este escrito.' : 'Escrito não encontrado.'}
+          {work ? 'Não foi possível carregar este capítulo.' : 'Escrito não encontrado.'}
         </Text>
-        {work && (
+        {work && !parsed && (
           <TouchableOpacity style={[styles.retryBtn, { backgroundColor: colors.cardBackground }]} onPress={() => setReloadKey(k => k + 1)}>
             <Text style={{ color: colors.accentColor }}>Tentar novamente</Text>
           </TouchableOpacity>
@@ -161,7 +233,7 @@ export default function FatherReaderScreen({ route, navigation }: any) {
     );
   }
 
-  if (!blocks) {
+  if (!parsed || !blocks) {
     return (
       <View style={[styles.center, { backgroundColor: colors.background }]}>
         <ActivityIndicator size="large" color={colors.accentColor} />
@@ -169,18 +241,90 @@ export default function FatherReaderScreen({ route, navigation }: any) {
     );
   }
 
+  const prev = neighborChapter(parsed, chapterN, -1);
+  const next = neighborChapter(parsed, chapterN, 1);
+
   return (
     <View style={[styles.container, { backgroundColor: colors.background }]}>
       <FlatList
+        ref={flatListRef}
         data={blocks}
         keyExtractor={b => b.key}
         renderItem={renderItem}
         contentContainerStyle={styles.content}
-        initialNumToRender={4}
+        initialNumToRender={6}
         maxToRenderPerBatch={4}
         updateCellsBatchingPeriod={50}
         windowSize={7}
         removeClippedSubviews
+        onScrollToIndexFailed={info => {
+          // Alturas variáveis: vai até perto e tenta de novo
+          flatListRef.current?.scrollToOffset({ offset: info.averageItemLength * info.index, animated: false });
+          setTimeout(() => {
+            flatListRef.current?.scrollToIndex({ index: info.index, animated: false, viewPosition: 0 });
+          }, 200);
+        }}
+      />
+
+      <View style={[styles.navBar, { backgroundColor: colors.background, borderTopColor: colors.borderColor }]}>
+        <TouchableOpacity
+          style={[styles.navBtn, prev === null && styles.navBtnDisabled]}
+          onPress={() => goChapter(prev)}
+          disabled={prev === null}
+        >
+          <View style={styles.navRow}>
+            <Ionicons name="chevron-back" size={18} color={colors.accentColor} />
+            <Text style={[styles.navText, { color: colors.accentColor }]} numberOfLines={1}>
+              {prev !== null ? ` ${neighborLabel(parsed, prev)}` : ''}
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        {chapterN >= 1 ? (
+          <TouchableOpacity
+            style={[styles.chapterMarkBtn, { backgroundColor: colors.cardBackground }]}
+            onPress={toggleRead}
+          >
+            <Ionicons
+              name={isRead ? 'checkmark-circle' : 'checkmark-circle-outline'}
+              size={20}
+              color={isRead ? colors.accentColor : colors.textSecondary}
+            />
+            <Text style={[styles.chapterMarkText, { color: isRead ? colors.accentColor : colors.textSecondary }]}>
+              Marcar capítulo
+            </Text>
+          </TouchableOpacity>
+        ) : (
+          <View style={styles.markSpacer} />
+        )}
+
+        <TouchableOpacity
+          style={[styles.navBtn, next === null && styles.navBtnDisabled]}
+          onPress={() => goChapter(next)}
+          disabled={next === null}
+        >
+          <View style={styles.navRow}>
+            <Text style={[styles.navText, { color: colors.accentColor }]} numberOfLines={1}>
+              {next !== null ? `${neighborLabel(parsed, next)} ` : ''}
+            </Text>
+            <Ionicons name="chevron-forward" size={18} color={colors.accentColor} />
+          </View>
+        </TouchableOpacity>
+      </View>
+
+      <FontSizeModal
+        visible={fontSizeModalVisible}
+        currentSize={fontSize}
+        onClose={() => setFontSizeModalVisible(false)}
+        onIncrease={() => fontSize < 32 && saveFontSize(fontSize + 2)}
+        onDecrease={() => fontSize > 12 && saveFontSize(fontSize - 2)}
+        colors={{
+          background: colors.background,
+          text: colors.text,
+          cardBackground: colors.cardBackground,
+          accentColor: colors.accentColor,
+          borderColor: colors.borderColor,
+        }}
       />
     </View>
   );
@@ -189,8 +333,28 @@ export default function FatherReaderScreen({ route, navigation }: any) {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   center: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
-  content: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 48 },
+  content: { paddingHorizontal: 18, paddingTop: 8, paddingBottom: 32 },
   note: { borderLeftWidth: 2, paddingLeft: 10, marginTop: -4, marginBottom: 12, marginLeft: 4 },
   errorText: { fontSize: 15, marginBottom: 12, textAlign: 'center' },
   retryBtn: { paddingHorizontal: 16, paddingVertical: 10, borderRadius: 8 },
+  headerBtn: { paddingRight: 12 },
+  navBar: {
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 16, paddingVertical: 10,
+    borderTopWidth: StyleSheet.hairlineWidth,
+  },
+  navBtn: { padding: 8, minWidth: 84 },
+  navBtnDisabled: { opacity: 0.3 },
+  navRow: { flexDirection: 'row', alignItems: 'center' },
+  navText: { fontSize: 14, maxWidth: 70 },
+  markSpacer: { flex: 1 },
+  chapterMarkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 8,
+    gap: 6,
+  },
+  chapterMarkText: { fontSize: 12, fontWeight: '600' },
 });

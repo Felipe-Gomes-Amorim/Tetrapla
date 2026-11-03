@@ -22,12 +22,12 @@ interface IndexEntry {
 const SNIPPET_CHARS = 160;
 
 // Remove acentos e caixa mantendo o mesmo comprimento (para os índices valerem no texto original)
-function fold(text: string): string {
-  const folded = text.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+export function foldText(text: string): string {
+  const folded = text.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
   if (folded.length === text.length) return folded;
   let out = '';
   for (const ch of text) {
-    const f = ch.normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+    const f = ch.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
     out += f.length === ch.length ? f : ch.toLowerCase();
   }
   return out.length === text.length ? out : text.toLowerCase();
@@ -75,7 +75,7 @@ export function prepareFatherSearch(onProgress?: (done: number, total: number) =
             chapter: ch.n,
             chapterLabel: ch.title,
             plain,
-            folded: fold(plain),
+            folded: foldText(plain),
           });
         }
         onProgress?.(++done, FATHER_WORKS.length);
@@ -113,7 +113,7 @@ export async function searchFathers(
   limit: number = 50,
   offset: number = 0
 ): Promise<{ total: number; results: FatherSearchResult[] }> {
-  const q = fold(query.trim());
+  const q = foldText(query.trim());
   if (q.length === 0) return { total: 0, results: [] };
 
   await prepareFatherSearch();

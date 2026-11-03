@@ -8,6 +8,11 @@ export { INTRO_N, NOTES_N };
 const workCache = new Map<string, ParsedWork>();
 const pending = new Map<string, Promise<ParsedWork>>();
 
+// Versão síncrona: só devolve se o escrito já foi carregado (evita piscar o spinner ao trocar de capítulo)
+export function getCachedWork(workId: string): ParsedWork | undefined {
+  return workCache.get(workId);
+}
+
 // Capítulos de um escrito (cache em memória; o texto é lido do asset na primeira vez)
 export function getWorkChapters(workId: string): Promise<ParsedWork> {
   const cached = workCache.get(workId);
