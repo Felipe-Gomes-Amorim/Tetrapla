@@ -1,3 +1,4 @@
+import { emitProgressChanged } from '../data/progressEvents';
 import * as SQLite from 'expo-sqlite';
 
 export async function getVerses(db: SQLite.SQLiteDatabase, book: string, chapter: number) {
@@ -253,6 +254,7 @@ export async function markChapterAsRead(bookCode: string, chapter: number) {
     await ensureReadChaptersDir();
     const filePath = `${READ_CHAPTERS_DIR}${bookCode}_${chapter}.txt`;
     await FileSystem.writeAsStringAsync(filePath, 'read');
+    emitProgressChanged();
   } catch (e) {
     console.error(`Erro ao marcar ${bookCode}_${chapter} como lido:`, e);
   }
@@ -262,6 +264,7 @@ export async function unmarkChapterAsRead(bookCode: string, chapter: number) {
   try {
     const filePath = `${READ_CHAPTERS_DIR}${bookCode}_${chapter}.txt`;
     await FileSystem.deleteAsync(filePath, { idempotent: true });
+    emitProgressChanged();
   } catch (e) {
     console.error(`Erro ao desmarcar ${bookCode}_${chapter}:`, e);
   }

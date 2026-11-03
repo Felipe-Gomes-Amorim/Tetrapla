@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ProgressRing from '../components/ProgressRing';
-import { useTheme } from '../contexts/ThemeContext';
+import { useFathersTheme } from '../contexts/ThemeContext';
 import { subFont } from '../theme/fonts';
 import { getTotalProgress, getWorksProgress } from '../data/fatherProgress';
 
@@ -29,7 +29,7 @@ function buildRows(works: WorkProgress[]): Row[] {
 }
 
 export default function FatherProgressScreen({ navigation }: any) {
-  const { colors } = useTheme();
+  const { colors } = useFathersTheme();
   const [total, setTotal] = useState({ read: 0, total: 0, percent: 0 });
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);

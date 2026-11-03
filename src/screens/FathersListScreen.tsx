@@ -6,11 +6,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { useFathersTheme } from '../contexts/ThemeContext';
 import { getFatherGroups, FatherWork } from '../data/fathers';
 import { getWorkChapters, ParsedWork, INTRO_N, NOTES_N } from '../data/fatherChapters';
 import { getReadChapters, getTotalProgress } from '../data/fatherProgress';
-import ProgressRing from '../components/ProgressRing';
 import OutlinedIcon from '../components/OutlinedIcon';
 import { subFont } from '../theme/fonts';
 
@@ -21,7 +20,7 @@ function formatSize(kb: number) {
 }
 
 export default function FathersListScreen({ navigation }: any) {
-  const { colors } = useTheme();
+  const { colors } = useFathersTheme();
   const isFocused = useIsFocused();
   const [selectedWork, setSelectedWork] = useState<FatherWork | null>(null);
   const [parsed, setParsed] = useState<ParsedWork | null>(null);
@@ -74,9 +73,6 @@ export default function FathersListScreen({ navigation }: any) {
 
   const topButtons = (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-      <TouchableOpacity style={styles.topBtn} onPress={() => navigation.navigate('FatherProgress')}>
-        <ProgressRing progress={totalPercent} size={26} strokeWidth={3} backgroundColor="transparent" fillColor={colors.accentColor} outlineColor={colors.accentColor} />
-      </TouchableOpacity>
       <TouchableOpacity style={styles.topBtn} onPress={() => navigation.navigate('FatherSearch', {})}>
         <OutlinedIcon name="search" size={24} outlineColor={colors.accentColor} fillColor={colors.background} />
       </TouchableOpacity>
@@ -85,7 +81,7 @@ export default function FathersListScreen({ navigation }: any) {
 
   // Grade de capítulos do escrito escolhido
   if (selectedWork) {
-    const readBg = colors.isDark ? '#1a3a1a' : '#E8F5E9';
+    const readBg = colors.readBackground;
     const chapters = parsed?.chapters ?? [];
     return (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>

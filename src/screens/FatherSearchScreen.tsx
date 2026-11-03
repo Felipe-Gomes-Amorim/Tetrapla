@@ -2,14 +2,14 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, TextInput, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { useFathersTheme } from '../contexts/ThemeContext';
 import { subFont } from '../theme/fonts';
 import { searchFathers, prepareFatherSearch, isFatherSearchReady, FatherSearchResult } from '../data/fatherSearch';
 
 const PAGE_SIZE = 50;
 
 export default function FatherSearchScreen({ navigation }: any) {
-  const { colors } = useTheme();
+  const { colors } = useFathersTheme();
   const [searchText, setSearchText] = useState('');
   const [results, setResults] = useState<FatherSearchResult[]>([]);
   const [total, setTotal] = useState<number | null>(null);

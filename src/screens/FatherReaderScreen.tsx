@@ -4,7 +4,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Markdown from 'react-native-markdown-display';
 import * as FileSystem from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { useFathersTheme } from '../contexts/ThemeContext';
 import { getFatherWork, FatherWork } from '../data/fathers';
 import { getWorkChapters, getCachedWork, neighborChapter, INTRO_N, NOTES_N, FatherChapter, ParsedWork } from '../data/fatherChapters';
 import { isChapterRead, markChapterRead, unmarkChapterRead } from '../data/fatherProgress';
@@ -12,14 +12,14 @@ import { foldText } from '../data/fatherSearch';
 import { splitMarkdown, MdBlock } from '../data/markdownBlocks';
 import { brandFont, readingFont, subFont } from '../theme/fonts';
 import FontSizeModal from '../components/FontSizeModal';
-import type { ThemeColors } from '../contexts/ThemeContext';
+import type { FathersColors } from '../contexts/ThemeContext';
 
 // Estilos do Markdown derivados do tema e do tamanho da fonte do corpo
-function buildMarkdownStyles(colors: ThemeColors, fontSize: number) {
+function buildMarkdownStyles(colors: FathersColors, fontSize: number) {
   const body = readingFont();
   const lineHeight = Math.round(fontSize * 1.55);
   const headingBase = { color: colors.text, marginTop: 20, marginBottom: 8 };
-  const noteBg = colors.isDark ? '#23302b' : '#eef6f2';
+  const noteBg = colors.noteBackground;
   return StyleSheet.create({
     body: { color: colors.text, backgroundColor: colors.background },
     text: { color: colors.text, fontSize, lineHeight, ...body },
@@ -63,7 +63,7 @@ function buildMarkdownStyles(colors: ThemeColors, fontSize: number) {
   });
 }
 
-function buildNoteStyles(colors: ThemeColors, fontSize: number) {
+function buildNoteStyles(colors: FathersColors, fontSize: number) {
   const size = Math.max(12, fontSize - 3);
   return StyleSheet.create({
     body: { color: colors.textSecondary },
@@ -110,7 +110,7 @@ function neighborLabel(parsed: ParsedWork, n: number): string {
 }
 
 export default function FatherReaderScreen({ route, navigation }: any) {
-  const { colors } = useTheme();
+  const { colors } = useFathersTheme();
   const id: string = route.params?.id;
   const chapterN: number = route.params?.chapter ?? 1;
   const highlight: string | undefined = route.params?.highlight;

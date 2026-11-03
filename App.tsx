@@ -23,7 +23,7 @@ import SearchScreen from './src/screens/SearchScreen';
 import ProgressScreen from './src/screens/ProgressScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { initializeDatabase } from './src/db/database';
-import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
+import { ThemeProvider, useTheme, useFathersTheme } from './src/contexts/ThemeContext';
 import { SettingsProvider } from './src/contexts/SettingsContext';
 import { BRAND_FONT_NAME, SUB_FONT_NAME, READING_FONT_NAME, setBrandFontLoaded, setSubFontLoaded, setReadingFontLoaded, subFont } from './src/theme/fonts';
 
@@ -31,6 +31,7 @@ const Stack = createStackNavigator();
 
 function AppContent() {
   const { isDark, colors } = useTheme();
+  const { colors: fathersColors } = useFathersTheme();
 
   useEffect(() => {
     // Configurar barra de status do sistema
@@ -134,7 +135,7 @@ function AppContent() {
           options={{
             title: 'Escrito',
             headerStyle: { backgroundColor: colors.headerBackground },
-            headerTintColor: colors.accentColor,
+            headerTintColor: fathersColors.accentColor,
             headerTitleStyle: { color: colors.text, ...subFont() },
           }}
         />

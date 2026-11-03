@@ -1,5 +1,6 @@
 import * as FileSystem from 'expo-file-system/legacy';
 import { FATHER_WORKS, getFatherWork } from './fathers';
+import { emitProgressChanged } from './progressEvents';
 
 // Progresso de leitura dos Pais, separado do da Bíblia (read_chapters/):
 // um JSON único { [workId]: number[] } com os capítulos lidos (1..N; Introdução e Notas não contam).
@@ -71,6 +72,7 @@ export async function markChapterRead(workId: string, n: number): Promise<void> 
   if (list.includes(n)) return;
   map[workId] = [...list, n].sort((a, b) => a - b);
   await persist();
+  emitProgressChanged();
 }
 
 export async function unmarkChapterRead(workId: string, n: number): Promise<void> {
@@ -79,6 +81,7 @@ export async function unmarkChapterRead(workId: string, n: number): Promise<void
   if (!list || !list.includes(n)) return;
   map[workId] = list.filter(x => x !== n);
   await persist();
+  emitProgressChanged();
 }
 
 // Capítulos lidos que ainda existem no escrito (descarta números fora de 1..total)

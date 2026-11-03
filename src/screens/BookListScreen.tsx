@@ -9,7 +9,6 @@ import { BOOKS, getPreface, getTotalReadProgress, isApocryphal, isChapterRead, g
 import { useSettings } from '../contexts/SettingsContext';
 import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import ProgressRing from '../components/ProgressRing';
 import OutlinedIcon from '../components/OutlinedIcon';
 import { useTheme } from '../contexts/ThemeContext';
 import { brandFont, subFont } from '../theme/fonts';
@@ -198,9 +197,6 @@ export default function BookListScreen({ navigation }: any) {
             <Text style={[styles.title, { color: colors.text }, brandFont()]}>Tetrapla</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TouchableOpacity style={styles.topBtn} onPress={() => navigation.navigate('Progress')}>
-              <ProgressRing progress={readProgress} size={26} strokeWidth={3} backgroundColor="transparent" fillColor={colors.accentColor} outlineColor={colors.accentColor} />
-            </TouchableOpacity>
             <TouchableOpacity style={styles.topBtn} onPress={() => navigation.navigate('Settings')}>
               <Ionicons name="settings-outline" size={26} color={colors.accentColor} />
             </TouchableOpacity>
