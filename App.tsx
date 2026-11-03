@@ -11,7 +11,10 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { Asset } from 'expo-asset';
 import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
-import BookListScreen from './src/screens/BookListScreen';
+import MainTabs from './src/navigation/MainTabs';
+import FatherReaderScreen from './src/screens/FatherReaderScreen';
+import * as SystemUI from 'expo-system-ui';
+import { NavigationBar } from 'expo-navigation-bar';
 import ReaderScreen from './src/screens/ReaderScreen';
 import PrefaceScreen from './src/screens/PrefaceScreen';
 import SearchScreen from './src/screens/SearchScreen';
@@ -20,7 +23,7 @@ import SettingsScreen from './src/screens/SettingsScreen';
 import { initializeDatabase } from './src/db/database';
 import { ThemeProvider, useTheme } from './src/contexts/ThemeContext';
 import { SettingsProvider } from './src/contexts/SettingsContext';
-import { BRAND_FONT_NAME, SUB_FONT_NAME, READING_FONT_NAME, setBrandFontLoaded, setSubFontLoaded, setReadingFontLoaded } from './src/theme/fonts';
+import { BRAND_FONT_NAME, SUB_FONT_NAME, READING_FONT_NAME, setBrandFontLoaded, setSubFontLoaded, setReadingFontLoaded, subFont } from './src/theme/fonts';
 
 const Stack = createStackNavigator();
 
@@ -30,6 +33,11 @@ function AppContent() {
   useEffect(() => {
     // Configurar barra de status do sistema
     StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
+
+    // Barra de navegação do sistema (Android, edge-to-edge): fica transparente sobre o fundo da raiz,
+    // então pintamos o fundo da janela e ajustamos o estilo dos botões ('dark' = barra escura, botões claros)
+    SystemUI.setBackgroundColorAsync(colors.background).catch(() => {});
+    if (Platform.OS === 'android') NavigationBar.setStyle(isDark ? 'dark' : 'light');
   }, [isDark, colors]);
 
   const defaultHeaderOptions = (navigation: any) => ({
@@ -72,8 +80,8 @@ function AppContent() {
         }}
       >
         <Stack.Screen
-          name="Books"
-          component={BookListScreen}
+          name="Home"
+          component={MainTabs}
           options={{ headerShown: false }}
         />
         <Stack.Screen
@@ -116,6 +124,16 @@ function AppContent() {
                 </TouchableOpacity>
               ),
             };
+          }}
+        />
+        <Stack.Screen
+          name="FatherReader"
+          component={FatherReaderScreen}
+          options={{
+            title: 'Escrito',
+            headerStyle: { backgroundColor: colors.headerBackground },
+            headerTintColor: colors.accentColor,
+            headerTitleStyle: { color: colors.text, ...subFont() },
           }}
         />
         <Stack.Screen

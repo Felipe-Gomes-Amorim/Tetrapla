@@ -7,7 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import { BOOKS, getPreface, getTotalReadProgress, isApocryphal, isChapterRead, getBooksWithReadProgress } from '../db/database';
 import { useSettings } from '../contexts/SettingsContext';
-import { useFocusEffect } from '@react-navigation/native';
+import { useFocusEffect, useIsFocused } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ProgressRing from '../components/ProgressRing';
 import OutlinedIcon from '../components/OutlinedIcon';
@@ -18,6 +18,7 @@ import { buildGroupedRows, BookListRow } from '../data/bookGroups';
 export default function BookListScreen({ navigation }: any) {
   const { colors, toggleTheme } = useTheme();
   const db = useSQLiteContext();
+  const isFocused = useIsFocused();
   const { showDeuterocanonical, groupBooks, otOrder } = useSettings();
   const [selectedBook, setSelectedBook] = useState<typeof BOOKS[0] | null>(null);
   const [hasPreface, setHasPreface] = useState(false);
@@ -100,7 +101,8 @@ export default function BookListScreen({ navigation }: any) {
   };
 
   useEffect(() => {
-    if (!selectedBook) return;
+    // Só intercepta o voltar enquanto esta aba está em foco (a aba Pais fica montada em segundo plano)
+    if (!selectedBook || !isFocused) return;
     if (Platform.OS !== 'android') return;
     const onBack = () => {
       setSelectedBook(null);
@@ -108,13 +110,13 @@ export default function BookListScreen({ navigation }: any) {
     };
     const subscription = BackHandler.addEventListener('hardwareBackPress', onBack);
     return () => subscription.remove();
-  }, [selectedBook]);
+  }, [selectedBook, isFocused]);
 
   if (selectedBook) {
     const chapters = Array.from({ length: selectedBook.chapters }, (_, i) => i + 1);
 
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right', 'bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
         {/* Header com título */}
         <View style={[styles.chapterHeaderContainer, { borderBottomColor: colors.borderColor }]}>
           <TouchableOpacity onPress={() => {
@@ -190,7 +192,7 @@ export default function BookListScreen({ navigation }: any) {
           .map(book => ({ type: 'book' as const, key: book.code, book }));
 
     return (
-      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right', 'bottom']}>
+      <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
         <View style={[styles.titleBarContainer, { backgroundColor: colors.background, borderBottomColor: colors.borderColor }]}>
           <TouchableOpacity onPress={toggleTheme}>
             <Text style={[styles.title, { color: colors.text }, brandFont()]}>Tetrapla</Text>

@@ -9,7 +9,8 @@
     "plugins": [
       "expo-asset",
       "expo-sqlite",
-      "expo-font"
+      "expo-font",
+      ["expo-navigation-bar", { "enforceContrast": false }]
     ],
     "platforms": [
       "ios",
@@ -24,6 +25,7 @@
     "android": {
       "package": "com.felipegomesamorim.bibliapoliglota"
     },
+    "userInterfaceStyle": "automatic",
     "icon": "./src/img/tetrapla-logo.png"
   }
 }
