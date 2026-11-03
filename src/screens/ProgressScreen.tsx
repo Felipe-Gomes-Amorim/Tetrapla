@@ -14,6 +14,7 @@ import { getTotalReadProgress, getBooksWithReadProgress, BOOKS } from '../db/dat
 import ProgressRing from '../components/ProgressRing';
 import { getTitleAndBadge } from '../data/titles';
 import { useTheme } from '../contexts/ThemeContext';
+import { subFont } from '../theme/fonts';
 
 interface BookProgress {
   code: string;
@@ -74,7 +75,7 @@ export default function ProgressScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={28} color={colors.accentColor} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Progresso de Leitura</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }, subFont()]}>Progresso de Leitura</Text>
         <View style={{ width: 28 }} />
       </View>
 

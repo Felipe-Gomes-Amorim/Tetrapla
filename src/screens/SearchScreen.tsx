@@ -8,6 +8,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { searchVerses, BOOKS } from '../db/database';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
+import { subFont } from '../theme/fonts';
 
 export default function SearchScreen({ navigation }: any) {
   const db = useSQLiteContext();
@@ -70,7 +71,7 @@ export default function SearchScreen({ navigation }: any) {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="chevron-back" size={24} color={colors.accentColor} />
         </TouchableOpacity>
-        <Text style={[styles.headerTitle, { color: colors.text }]}>Buscar Versículos</Text>
+        <Text style={[styles.headerTitle, { color: colors.text }, subFont()]}>Buscar Versículos</Text>
         <View style={{ width: 24 }} />
       </View>
 

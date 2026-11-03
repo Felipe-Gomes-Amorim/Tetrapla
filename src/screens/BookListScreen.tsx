@@ -194,8 +194,8 @@ export default function BookListScreen({ navigation }: any) {
             <TouchableOpacity onPress={() => navigation.navigate('Progress')}>
               <ProgressRing progress={readProgress} size={24} strokeWidth={3} backgroundColor={colors.cardBackground} fillColor={colors.accentColor} />
             </TouchableOpacity>
-            <TouchableOpacity onPress={() => navigation.navigate('Achievements')}>
-              <Ionicons name="star" size={24} color={colors.accentColor} />
+            <TouchableOpacity onPress={() => navigation.navigate('Settings')}>
+              <Ionicons name="settings-outline" size={24} color={colors.accentColor} />
             </TouchableOpacity>
             <TouchableOpacity onPress={() => navigation.navigate('Search')}>
               <Ionicons name="search" size={24} color={colors.accentColor} />

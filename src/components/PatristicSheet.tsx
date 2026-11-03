@@ -26,7 +26,7 @@ export default function PatristicSheet({ visible, onClose, refs, verseRef }: Pro
       borderBottomWidth: StyleSheet.hairlineWidth,
       borderBottomColor: colors.borderColor,
     },
-    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text },
+    headerTitle: { fontSize: 18, fontWeight: '600', color: colors.text, ...subFont() },
     headerSub: { fontSize: 13, color: colors.textSecondary, marginTop: 2 },
     closeBtn: { marginTop: 12, alignSelf: 'flex-end' },
     closeText: { color: colors.accentColor, fontSize: 15, fontWeight: '500' },
@@ -51,7 +51,7 @@ export default function PatristicSheet({ visible, onClose, refs, verseRef }: Pro
       <SafeAreaView style={dynamicStyles.container} edges={['top', 'left', 'right', 'bottom']}>
         <View style={dynamicStyles.header}>
           <Text style={dynamicStyles.headerTitle}>{verseRef}</Text>
-          <Text style={dynamicStyles.headerSub}>{refs.length} referências patrísticas</Text>
+          <Text style={[dynamicStyles.headerSub, subFont()]}>{refs.length} referências patrísticas</Text>
           <TouchableOpacity style={dynamicStyles.closeBtn} onPress={onClose}>
             <Text style={dynamicStyles.closeText}>Fechar</Text>
           </TouchableOpacity>
