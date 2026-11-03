@@ -6,12 +6,14 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import { searchVerses, BOOKS } from '../db/database';
+import { useSettings } from '../contexts/SettingsContext';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 
 export default function SearchScreen({ navigation }: any) {
   const db = useSQLiteContext();
   const { colors } = useTheme();
+  const { showDeuterocanonical } = useSettings();
   const [searchText, setSearchText] = useState('');
   const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -25,7 +27,7 @@ export default function SearchScreen({ navigation }: any) {
     const performSearch = async () => {
       setLoading(true);
       try {
-        const rows = await searchVerses(db, searchText);
+        const rows = await searchVerses(db, searchText, showDeuterocanonical);
         setResults(rows);
       } catch (e) {
         console.error('Erro ao buscar versículos:', e);
@@ -36,7 +38,7 @@ export default function SearchScreen({ navigation }: any) {
 
     const timer = setTimeout(performSearch, 300);
     return () => clearTimeout(timer);
-  }, [searchText]);
+  }, [searchText, showDeuterocanonical]);
 
   // Função para encontrar o nome do livro pelo código
   const getBookName = (code: string) => {

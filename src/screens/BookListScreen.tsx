@@ -6,6 +6,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import { BOOKS, getPreface, getTotalReadProgress, isApocryphal, isChapterRead, getBooksWithReadProgress } from '../db/database';
+import { useSettings } from '../contexts/SettingsContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ProgressRing from '../components/ProgressRing';
@@ -15,6 +16,7 @@ import { brandFont, subFont } from '../theme/fonts';
 export default function BookListScreen({ navigation }: any) {
   const { colors, toggleTheme } = useTheme();
   const db = useSQLiteContext();
+  const { showDeuterocanonical } = useSettings();
   const [selectedBook, setSelectedBook] = useState<typeof BOOKS[0] | null>(null);
   const [hasPreface, setHasPreface] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -33,12 +35,12 @@ export default function BookListScreen({ navigation }: any) {
         // Se não tem livro selecionado, carregar progresso de todos
         loadAllBooksProgress();
       }
-    }, [selectedBook])
+    }, [selectedBook, showDeuterocanonical])
   );
 
   async function loadAllBooksProgress() {
     try {
-      const booksData = await getBooksWithReadProgress();
+      const booksData = await getBooksWithReadProgress(showDeuterocanonical);
       const progressMap = new Map<string, { read: number; total: number }>();
       
       for (const book of booksData) {
@@ -57,7 +59,7 @@ export default function BookListScreen({ navigation }: any) {
 
   async function loadProgress() {
     try {
-      const progress = await getTotalReadProgress();
+      const progress = await getTotalReadProgress(showDeuterocanonical);
       setReadProgress(progress);
     } catch (e) {
       console.error('Erro ao carregar progresso:', e);
@@ -179,6 +181,7 @@ export default function BookListScreen({ navigation }: any) {
 
     // Filtro de livros pelo texto de busca (case-insensitive e sem acentos)
     const filteredBooks = BOOKS.filter(b =>
+      (showDeuterocanonical || !isApocryphal(b.code)) &&
       removeAccents(b.name.toLowerCase()).includes(
         removeAccents(searchText.toLowerCase())
       )
@@ -256,6 +259,9 @@ export default function BookListScreen({ navigation }: any) {
                 
                 <Text style={[styles.bookCode, { color: colors.textSecondary }]}>{item.code}</Text>
                 <Text style={[styles.bookName, { color: colors.text }]}>{item.name}</Text>
+                {isApocryphal(item.code) && (
+                  <Text style={[styles.bookLangTag, { color: colors.textSecondary, borderColor: colors.borderColor }]}>Latim</Text>
+                )}
                 <Text style={[styles.bookChapters, { color: colors.textSecondary }]}>{item.chapters} cap.</Text>
               </TouchableOpacity>
             );
@@ -348,6 +354,7 @@ const styles = StyleSheet.create({
   },
   bookCode: { width: 44, fontSize: 12, color: '#888', fontFamily: 'monospace', zIndex: 1 },
   bookName: { flex: 1, fontSize: 16, zIndex: 1 },
+  bookLangTag: { fontSize: 10, marginRight: 8, paddingHorizontal: 6, paddingVertical: 1, borderWidth: 1, borderRadius: 8, zIndex: 1 },
   bookChapters: { fontSize: 12, color: '#aaa', zIndex: 1 },
   chapterListContent: { paddingHorizontal: 12, paddingTop: 8 },
   chapterBtn: {

@@ -5,7 +5,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSQLiteContext } from 'expo-sqlite';
-import { getVerses, getPatristicCountsForChapter, getPatristicRefs, markChapterAsRead, unmarkChapterAsRead, isChapterRead, getPreface } from '../db/database';
+import { getVerses, getPatristicCountsForChapter, getPatristicRefs, markChapterAsRead, unmarkChapterAsRead, isChapterRead, getPreface, isApocryphal, getAvailableLanguages } from '../db/database';
 import PatristicSheet from '../components/PatristicSheet';
 import CustomAlert from '../components/CustomAlert';
 import FontSizeModal from '../components/FontSizeModal';
@@ -15,6 +15,7 @@ import { getTotalReadProgress } from '../db/database';
 import { getAchievementById } from '../data/achievements';
 import AchievementToast from '../components/AchievementToast';
 import { useTheme } from '../contexts/ThemeContext';
+import { useSettings } from '../contexts/SettingsContext';
 import { brandFont } from '../theme/fonts';
 
 type Lang = 'pt' | 'lat' | 'grc' | 'heb';
@@ -28,8 +29,10 @@ const LANGS: { key: Lang; label: string }[] = [
 export default function ReaderScreen({ route, navigation }: any) {
   const db = useSQLiteContext();
   const { colors } = useTheme();
+  const { showDeuterocanonical } = useSettings();
   const { book, bookName, chapter, totalChapters, scrollToVerse } = route.params;
   const [lang, setLang] = useState<Lang>('pt');
+  const [availableLangs, setAvailableLangs] = useState<Lang[] | null>(null);
   const [verses, setVerses] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
@@ -44,6 +47,18 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [toastAchievement, setToastAchievement] = useState<{ name: string; icon: string } | null>(null);
   const [prefaceData, setPrefaceData] = useState<any>(null);
   const flatListRef = useRef<FlatList>(null);
+
+  // Deuterocanônicos: oferecer só os idiomas que têm texto no banco
+  useEffect(() => {
+    if (!isApocryphal(book)) {
+      setAvailableLangs(null);
+      return;
+    }
+    getAvailableLanguages(db, book).then(langs => {
+      setAvailableLangs(langs as Lang[]);
+      if (langs.length > 0) setLang(cur => (langs.includes(cur) ? cur : (langs[0] as Lang)));
+    }).catch(() => setAvailableLangs(null));
+  }, [book]);
 
   // Carregar tamanho de fonte salvo ao montar
   useEffect(() => {
@@ -182,7 +197,7 @@ export default function ReaderScreen({ route, navigation }: any) {
 
         // Checar achievements
         const chapAchievements = await checkAchievementsForChapter(book, chapter);
-        const progress = await getTotalReadProgress();
+        const progress = await getTotalReadProgress(showDeuterocanonical);
         const progressAchievements = await checkAchievementsForProgress(progress);
 
         const allUnlocked = [...chapAchievements, ...progressAchievements];
@@ -251,7 +266,7 @@ export default function ReaderScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.container, dynamicStyles.container]} edges={['left', 'right', 'bottom']}>
       <View style={[styles.langBar, dynamicStyles.langBar]}>
-        {LANGS.map(l => (
+        {LANGS.filter(l => !availableLangs || availableLangs.includes(l.key)).map(l => (
           <TouchableOpacity
             key={l.key}
             style={[styles.langBtn, dynamicStyles.langBtn, lang === l.key && dynamicStyles.langBtnActive]}

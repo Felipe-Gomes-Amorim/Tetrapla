@@ -53,16 +53,24 @@ export async function getPreface(db: SQLite.SQLiteDatabase, book: string) {
   );
 }
 
-export async function searchVerses(db: SQLite.SQLiteDatabase, searchText: string) {
+export async function searchVerses(
+  db: SQLite.SQLiteDatabase,
+  searchText: string,
+  includeDeutero: boolean = true
+) {
+  const apocrypha = Array.from(APOCRYPHAL_BOOKS);
+  const exclude = includeDeutero
+    ? ''
+    : `AND book NOT IN (${apocrypha.map(() => '?').join(',')})`;
   return db.getAllAsync<{
     book: string; chapter: number; verse: number; pt: string;
   }>(
     `SELECT book, chapter, verse, pt
      FROM verses
-     WHERE pt LIKE ?
+     WHERE pt LIKE ? ${exclude}
      ORDER BY book, chapter, verse
      LIMIT 100`,
-    [`%${searchText}%`]
+    [`%${searchText}%`, ...(includeDeutero ? [] : apocrypha)]
   );
 }
 
@@ -151,7 +159,7 @@ export const OLD_TESTAMENT_BOOKS = new Set([
   'HAB', 'ZEP', 'HAG', 'ZEC', 'MAL'
 ]);
 
-// Livros Apócrifos (só têm em latim e grego, não em português)
+// Livros deuterocanônicos (sem português no banco; ver getAvailableLanguages)
 export const APOCRYPHAL_BOOKS = new Set(['TOB', 'JDT', '1MA', '2MA', 'WIS', 'SIR', 'BAR']);
 
 export function isOldTestament(bookCode: string): boolean {
@@ -160,6 +168,29 @@ export function isOldTestament(bookCode: string): boolean {
 
 export function isApocryphal(bookCode: string): boolean {
   return APOCRYPHAL_BOOKS.has(bookCode);
+}
+
+// Livros considerados nas contas de progresso/listas
+export function getVisibleBooks(includeDeutero: boolean = true) {
+  return includeDeutero ? BOOKS : BOOKS.filter(b => !isApocryphal(b.code));
+}
+
+// Idiomas com texto para um livro (deuterocanônicos: sem pt/heb)
+export async function getAvailableLanguages(
+  db: SQLite.SQLiteDatabase,
+  book: string
+): Promise<string[]> {
+  const row = await db.getFirstAsync<Record<string, number | null>>(
+    `SELECT
+       MAX(pt  IS NOT NULL AND pt  != '') AS pt,
+       MAX(lat IS NOT NULL AND lat != '') AS lat,
+       MAX(grc IS NOT NULL AND grc != '') AS grc,
+       MAX(heb IS NOT NULL AND heb != '') AS heb
+     FROM verses WHERE book = ?`,
+    [book]
+  );
+  if (!row) return [];
+  return (['pt', 'lat', 'grc', 'heb'] as const).filter(l => row[l]);
 }
 
 // ===== PROGRESSO DE LEITURA (FileSystem) =====
@@ -204,10 +235,10 @@ export async function isChapterRead(bookCode: string, chapter: number): Promise<
   }
 }
 
-export async function getTotalReadProgress(): Promise<number> {
+export async function getTotalReadProgress(includeDeutero: boolean = true): Promise<number> {
   try {
     let totalChapters = 0;
-    for (const book of BOOKS) {
+    for (const book of getVisibleBooks(includeDeutero)) {
       totalChapters += book.chapters;
     }
 
@@ -216,7 +247,10 @@ export async function getTotalReadProgress(): Promise<number> {
     try {
       await ensureReadChaptersDir();
       const files = await FileSystem.readDirectoryAsync(READ_CHAPTERS_DIR);
-      readChapters = files.length;
+      readChapters = files.filter(f => {
+        const code = f.match(/^([A-Z0-9]+)_\d+\.txt$/)?.[1];
+        return !!code && (includeDeutero || !isApocryphal(code));
+      }).length;
     } catch (e) {
       // Diretório vazio
     }
@@ -228,7 +262,7 @@ export async function getTotalReadProgress(): Promise<number> {
   }
 }
 
-export async function getBooksWithReadProgress() {
+export async function getBooksWithReadProgress(includeDeutero: boolean = true) {
   try {
     let readFiles: string[] = [];
     try {
@@ -251,7 +285,7 @@ export async function getBooksWithReadProgress() {
     }
 
     // Mapear para resultado
-    const result = BOOKS.map(book => ({
+    const result = getVisibleBooks(includeDeutero).map(book => ({
       code: book.code,
       name: book.name,
       totalChapters: book.chapters,
@@ -261,7 +295,7 @@ export async function getBooksWithReadProgress() {
     return result;
   } catch (e) {
     console.error('Erro ao obter progresso por livro:', e);
-    return BOOKS.map(book => ({
+    return getVisibleBooks(includeDeutero).map(book => ({
       code: book.code,
       name: book.name,
       totalChapters: book.chapters,
