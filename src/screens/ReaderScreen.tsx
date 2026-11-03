@@ -5,7 +5,7 @@ import * as FileSystem from 'expo-file-system/legacy';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSQLiteContext } from 'expo-sqlite';
-import { getVerses, getPatristicCountsForChapter, getPatristicRefs, markChapterAsRead, unmarkChapterAsRead, isChapterRead, getPreface, isApocryphal, getAvailableLanguages } from '../db/database';
+import { getVerses, getPatristicCountsForChapter, getPatristicRefs, markChapterAsRead, unmarkChapterAsRead, isChapterRead, getPreface, getAvailableLanguages, getCachedLanguages } from '../db/database';
 import PatristicSheet from '../components/PatristicSheet';
 import CustomAlert from '../components/CustomAlert';
 import FontSizeModal from '../components/FontSizeModal';
@@ -25,8 +25,15 @@ export default function ReaderScreen({ route, navigation }: any) {
   const db = useSQLiteContext();
   const { colors } = useTheme();
   const { book, bookName, chapter, totalChapters, scrollToVerse } = route.params;
-  const [lang, setLang] = useState<Lang>('pt');
-  const [availableLangs, setAvailableLangs] = useState<Lang[] | null>(null);
+  // Idioma preferido (passado entre capítulos); o exibido é derivado dos idiomas do livro
+  const [preferredLang, setPreferredLang] = useState<Lang>(route.params.lang ?? 'pt');
+  const [availableLangs, setAvailableLangs] = useState<Lang[] | null>(
+    (getCachedLanguages(book) as Lang[] | undefined) ?? null
+  );
+  const lang: Lang =
+    !availableLangs || availableLangs.length === 0 || availableLangs.includes(preferredLang)
+      ? preferredLang
+      : (['pt', 'lat', 'grc', 'heb'] as Lang[]).find(l => availableLangs.includes(l)) ?? preferredLang;
   const [verses, setVerses] = useState<any[]>([]);
   const [counts, setCounts] = useState<Record<number, number>>({});
   const [loading, setLoading] = useState(true);
@@ -40,16 +47,13 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [prefaceData, setPrefaceData] = useState<any>(null);
   const flatListRef = useRef<FlatList>(null);
 
-  // Deuterocanônicos: oferecer só os idiomas que têm texto no banco
+  // Oferecer só os idiomas que o livro tem (consulta em cache por livro)
   useEffect(() => {
-    if (!isApocryphal(book)) {
-      setAvailableLangs(null);
-      return;
-    }
-    getAvailableLanguages(db, book).then(langs => {
-      setAvailableLangs(langs as Lang[]);
-      if (langs.length > 0) setLang(cur => (langs.includes(cur) ? cur : (langs[0] as Lang)));
-    }).catch(() => setAvailableLangs(null));
+    let active = true;
+    getAvailableLanguages(db, book)
+      .then(langs => { if (active) setAvailableLangs(langs as Lang[]); })
+      .catch(() => { if (active) setAvailableLangs(LANGS.map(l => l.key)); });
+    return () => { active = false; };
   }, [book]);
 
   // Carregar tamanho de fonte salvo ao montar
@@ -209,10 +213,11 @@ export default function ReaderScreen({ route, navigation }: any) {
       chapter: next,
       totalChapters,
       direction: delta > 0 ? 'next' : 'prev',
+      lang: preferredLang,
     });
   };
 
-  if (loading) return (
+  if (loading || !availableLangs) return (
     <View style={[styles.center, { backgroundColor: colors.background }]}>
       <ActivityIndicator size="large" color={colors.accentColor} />
     </View>
@@ -237,11 +242,11 @@ export default function ReaderScreen({ route, navigation }: any) {
   return (
     <SafeAreaView style={[styles.container, dynamicStyles.container]} edges={['left', 'right', 'bottom']}>
       <View style={[styles.langBar, dynamicStyles.langBar]}>
-        {LANGS.filter(l => !availableLangs || availableLangs.includes(l.key)).map(l => (
+        {LANGS.filter(l => availableLangs.includes(l.key)).map(l => (
           <TouchableOpacity
             key={l.key}
             style={[styles.langBtn, dynamicStyles.langBtn, lang === l.key && dynamicStyles.langBtnActive]}
-            onPress={() => setLang(l.key)}
+            onPress={() => setPreferredLang(l.key)}
           >
             <Text style={[styles.langText, dynamicStyles.langText, lang === l.key && dynamicStyles.langTextActive]}>
               {l.label}

@@ -206,22 +206,34 @@ export function getVisibleBooks(includeDeutero: boolean = true) {
   return includeDeutero ? BOOKS : BOOKS.filter(b => !isApocryphal(b.code));
 }
 
-// Idiomas com texto para um livro (deuterocanônicos: sem pt/heb)
+// Idiomas com texto em algum ponto do livro (o livro inteiro, não só um capítulo).
+// O hebraico considera também o aramaico, que o acompanha. Resultado em cache por
+// livro, pois o banco não muda.
+const availableLanguagesCache = new Map<string, string[]>();
+
+export function getCachedLanguages(book: string): string[] | undefined {
+  return availableLanguagesCache.get(book);
+}
+
 export async function getAvailableLanguages(
   db: SQLite.SQLiteDatabase,
   book: string
 ): Promise<string[]> {
+  const cached = availableLanguagesCache.get(book);
+  if (cached) return cached;
   const row = await db.getFirstAsync<Record<string, number | null>>(
     `SELECT
        MAX(pt  IS NOT NULL AND pt  != '') AS pt,
        MAX(lat IS NOT NULL AND lat != '') AS lat,
        MAX(grc IS NOT NULL AND grc != '') AS grc,
-       MAX(heb IS NOT NULL AND heb != '') AS heb
+       MAX((heb IS NOT NULL AND heb != '') OR (aram IS NOT NULL AND aram != '')) AS heb
      FROM verses WHERE book = ?`,
     [book]
   );
   if (!row) return [];
-  return (['pt', 'lat', 'grc', 'heb'] as const).filter(l => row[l]);
+  const langs = (['pt', 'lat', 'grc', 'heb'] as const).filter(l => row[l]);
+  availableLanguagesCache.set(book, langs);
+  return langs;
 }
 
 // ===== PROGRESSO DE LEITURA (FileSystem) =====
