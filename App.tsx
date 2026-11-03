@@ -13,6 +13,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFonts } from 'expo-font';
 import MainTabs from './src/navigation/MainTabs';
 import FatherReaderScreen from './src/screens/FatherReaderScreen';
+import FatherProgressScreen from './src/screens/FatherProgressScreen';
+import FatherSearchScreen from './src/screens/FatherSearchScreen';
 import * as SystemUI from 'expo-system-ui';
 import { NavigationBar } from 'expo-navigation-bar';
 import ReaderScreen from './src/screens/ReaderScreen';
@@ -135,6 +137,16 @@ function AppContent() {
             headerTintColor: colors.accentColor,
             headerTitleStyle: { color: colors.text, ...subFont() },
           }}
+        />
+        <Stack.Screen
+          name="FatherProgress"
+          component={FatherProgressScreen}
+          options={{ headerShown: false }}
+        />
+        <Stack.Screen
+          name="FatherSearch"
+          component={FatherSearchScreen}
+          options={{ headerShown: false }}
         />
         <Stack.Screen
           name="Preface"
