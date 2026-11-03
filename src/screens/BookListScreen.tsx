@@ -195,14 +195,14 @@ export default function BookListScreen({ navigation }: any) {
             <Text style={[styles.title, { color: colors.text }, brandFont()]}>Tetrapla</Text>
           </TouchableOpacity>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <TouchableOpacity style={[styles.topBtn, { borderColor: colors.accentColor }]} onPress={() => navigation.navigate('Progress')}>
-              <ProgressRing progress={readProgress} size={22} strokeWidth={3} backgroundColor={colors.cardBackground} fillColor={colors.accentColor} />
+            <TouchableOpacity style={styles.topBtn} onPress={() => navigation.navigate('Progress')}>
+              <ProgressRing progress={readProgress} size={26} strokeWidth={3} backgroundColor="transparent" fillColor={colors.accentColor} outlineColor={colors.accentColor} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.topBtn, { borderColor: colors.accentColor }]} onPress={() => navigation.navigate('Settings')}>
-              <Ionicons name="settings-outline" size={22} color={colors.accentColor} />
+            <TouchableOpacity style={styles.topBtn} onPress={() => navigation.navigate('Settings')}>
+              <Ionicons name="settings-outline" size={26} color={colors.accentColor} />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.topBtn, { borderColor: colors.accentColor }]} onPress={() => navigation.navigate('Search')}>
-              <Ionicons name="search" size={22} color={colors.accentColor} />
+            <TouchableOpacity style={styles.topBtn} onPress={() => navigation.navigate('Search')}>
+              <Ionicons name="search-outline" size={26} color={colors.accentColor} />
             </TouchableOpacity>
           </View>
         </View>
@@ -291,7 +291,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 12,
   },
-  topBtn: { width: 38, height: 38, borderRadius: 12, borderWidth: 1.5, backgroundColor: 'transparent', alignItems: 'center', justifyContent: 'center' },
+  topBtn: { width: 34, height: 34, alignItems: 'center', justifyContent: 'center' },
   title: { fontSize: 22, fontWeight: '600' },
   groupHeader: { paddingHorizontal: 16, paddingTop: 18, paddingBottom: 6, borderBottomWidth: 1 },
   groupHeaderText: { fontSize: 15 },

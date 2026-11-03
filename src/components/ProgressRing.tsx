@@ -11,6 +11,9 @@ interface ProgressRingProps {
   strokeWidth?: number;
   backgroundColor?: string;
   fillColor?: string;
+  // Se informado, contorna as bordas externa e interna do anel (contorno colado ao formato do anel)
+  outlineColor?: string;
+  outlineWidth?: number;
 }
 
 export default function ProgressRing({
@@ -19,10 +22,13 @@ export default function ProgressRing({
   strokeWidth = 3,
   backgroundColor = '#a0a0a0',
   fillColor = '#1D9E75',
+  outlineColor,
+  outlineWidth = 1.5,
 }: ProgressRingProps) {
   const normalizedProgress = Math.max(0, Math.min(100, progress));
   const isComplete = normalizedProgress >= 100;
-  const radius = (size - strokeWidth) / 2;
+  const outline = outlineColor ? outlineWidth : 0;
+  const radius = (size - strokeWidth) / 2 - outline;
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (normalizedProgress / 100) * circumference;
   const cx = size / 2;
@@ -31,6 +37,14 @@ export default function ProgressRing({
   return (
     <View style={{ width: size, height: size }}>
       <Svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
+        {/* Contorno nas duas bordas do anel, encostado nele por fora */}
+        {outlineColor && (
+          <>
+            <Circle cx={cx} cy={cy} r={radius + strokeWidth / 2 + outline / 2} stroke={outlineColor} strokeWidth={outline} fill="none" />
+            <Circle cx={cx} cy={cy} r={radius - strokeWidth / 2 - outline / 2} stroke={outlineColor} strokeWidth={outline} fill="none" />
+          </>
+        )}
+
         {/* Círculo de fundo (outline cinza) */}
         <Circle
           cx={cx}
