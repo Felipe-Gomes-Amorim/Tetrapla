@@ -27,11 +27,6 @@ function AppContent() {
   useEffect(() => {
     // Configurar barra de status do sistema
     StatusBar.setBarStyle(isDark ? 'light-content' : 'dark-content', true);
-    
-    // Para Android, configurar cores das barras
-    if (Platform.OS === 'android') {
-      StatusBar.setBackgroundColor(colors.background, true);
-    }
   }, [isDark, colors]);
 
   const defaultHeaderOptions = (navigation: any) => ({
