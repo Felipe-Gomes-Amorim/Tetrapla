@@ -1,13 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Switch, Animated } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, Switch, Animated, ScrollView, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '../contexts/ThemeContext';
 import { useSettings } from '../contexts/SettingsContext';
+import { usePlans } from '../contexts/PlansContext';
+import ColorSwatches from '../components/ColorSwatches';
 import { subFont } from '../theme/fonts';
 
 export default function SettingsScreen({ navigation }: any) {
   const { colors } = useTheme();
+  const { plans, updatePlan, removePlan } = usePlans();
+  const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const { showDeuterocanonical, setShowDeuterocanonical, groupBooks, setGroupBooks, otOrder, setOtOrder } = useSettings();
 
   // Opções extras: aparecem com fade + slide ao ligar e saem do layout só depois da animação de saída
@@ -49,7 +53,7 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={{ width: 28 }} />
       </View>
 
-      <View style={styles.content}>
+      <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={[styles.sectionTitle, { color: colors.accentColor }, subFont()]}>Livros</Text>
         <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.borderColor }]}>
           <View style={styles.row}>
@@ -131,7 +135,55 @@ export default function SettingsScreen({ navigation }: any) {
             </Animated.View>
           )}
         </View>
-      </View>
+
+        <Text style={[styles.sectionTitle, { color: colors.accentColor, marginTop: 24 }, subFont()]}>Metas de leitura</Text>
+        <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.borderColor }]}>
+          {plans.length === 0 ? (
+            <Text style={[styles.help, { color: colors.textSecondary, marginTop: 0 }]}>
+              Nenhuma meta criada. Crie uma na tela de Progresso de Leitura, no menu acima do círculo.
+              Cada meta tem progresso próprio e a cor dela troca o verde da Bíblia.
+            </Text>
+          ) : (
+            plans.map((p, i) => {
+              const editing = editingPlanId === p.id;
+              return (
+                <View key={p.id} style={i > 0 && [styles.planDivider, { borderTopColor: colors.borderColor }]}>
+                  <TouchableOpacity style={styles.planRow} onPress={() => setEditingPlanId(editing ? null : p.id)}>
+                    <View style={[styles.planDot, { backgroundColor: p.color }]} />
+                    <Text style={[styles.label, { color: colors.text }]} numberOfLines={1}>{p.name}</Text>
+                    <Ionicons name={editing ? 'chevron-up' : 'create-outline'} size={20} color={colors.textSecondary} />
+                  </TouchableOpacity>
+                  {editing && (
+                    <View style={styles.planEditor}>
+                      <TextInput
+                        style={[styles.planInput, { color: colors.text, backgroundColor: colors.inputBackground }]}
+                        defaultValue={p.name}
+                        onChangeText={name => { if (name.trim()) updatePlan(p.id, { name }); }}
+                        maxLength={30}
+                        placeholder="Nome da meta"
+                        placeholderTextColor={colors.inputPlaceholder}
+                      />
+                      <ColorSwatches value={p.color} onChange={color => updatePlan(p.id, { color })} />
+                      <TouchableOpacity
+                        style={styles.planRemove}
+                        onPress={() =>
+                          Alert.alert('Remover meta', `Remover "${p.name}" e todo o progresso dela?`, [
+                            { text: 'Cancelar', style: 'cancel' },
+                            { text: 'Remover', style: 'destructive', onPress: () => { setEditingPlanId(null); removePlan(p.id); } },
+                          ])
+                        }
+                      >
+                        <Ionicons name="trash-outline" size={18} color="#E53935" />
+                        <Text style={styles.planRemoveText}>Remover meta</Text>
+                      </TouchableOpacity>
+                    </View>
+                  )}
+                </View>
+              );
+            })
+          )}
+        </View>
+      </ScrollView>
     </SafeAreaView>
   );
 }
@@ -147,7 +199,7 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
   },
   headerTitle: { fontSize: 18 },
-  content: { padding: 16 },
+  content: { padding: 16, paddingBottom: 32 },
   sectionTitle: { fontSize: 16, marginBottom: 8 },
   card: { borderRadius: 10, borderWidth: 1, padding: 14 },
   row: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
@@ -156,5 +208,12 @@ const styles = StyleSheet.create({
   segmentPill: { position: 'absolute', top: 0, bottom: 0, left: 0 },
   segmentBtn: { flex: 1, paddingVertical: 10, alignItems: 'center' },
   segmentText: { fontSize: 15, fontWeight: '600' },
+  planRow: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingVertical: 10 },
+  planDivider: { borderTopWidth: StyleSheet.hairlineWidth },
+  planDot: { width: 18, height: 18, borderRadius: 9 },
+  planEditor: { gap: 14, paddingBottom: 12 },
+  planInput: { borderRadius: 8, paddingHorizontal: 12, paddingVertical: 10, fontSize: 16 },
+  planRemove: { flexDirection: 'row', alignItems: 'center', gap: 6, alignSelf: 'flex-start' },
+  planRemoveText: { color: '#E53935', fontSize: 15 },
   help: { fontSize: 13, lineHeight: 19, marginTop: 8 },
 });

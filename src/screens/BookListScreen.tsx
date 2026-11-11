@@ -7,6 +7,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useSQLiteContext } from 'expo-sqlite';
 import { BOOKS, getPreface, getTotalReadProgress, isApocryphal, getReadChaptersForBook, getBooksWithReadProgress, getReadProgressVersion } from '../db/database';
 import { useSettings } from '../contexts/SettingsContext';
+import { usePlans } from '../contexts/PlansContext';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import OutlinedIcon from '../components/OutlinedIcon';
@@ -78,7 +79,7 @@ const ChapterButton = React.memo(function ChapterButton({
 }: {
   chapter: number; isRead: boolean; colors: any; onOpen: (chapter: number) => void;
 }) {
-  const readBgColor = colors.isDark ? '#1a3a1a' : '#E8F5E9';
+  const readBgColor = colors.readBackground;
   return (
     <TouchableOpacity
       style={[styles.chapterBtn, { backgroundColor: isRead ? readBgColor : colors.cardBackground }]}
@@ -93,6 +94,7 @@ export default function BookListScreen({ navigation }: any) {
   const { colors, toggleTheme } = useTheme();
   const db = useSQLiteContext();
   const { showDeuterocanonical, groupBooks, otOrder } = useSettings();
+  const { activePlanId } = usePlans();
   const [selectedBook, setSelectedBook] = useState<typeof BOOKS[0] | null>(null);
   const [hasPreface, setHasPreface] = useState(false);
   const [searchText, setSearchText] = useState('');
@@ -123,7 +125,7 @@ export default function BookListScreen({ navigation }: any) {
         // Se não tem livro selecionado, carregar progresso de todos
         loadAllBooksProgress();
       }
-    }, [selectedBook, showDeuterocanonical])
+    }, [selectedBook, showDeuterocanonical, activePlanId])
   );
 
   async function loadAllBooksProgress() {

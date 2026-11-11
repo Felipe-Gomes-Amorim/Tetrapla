@@ -12,6 +12,8 @@ import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { getTotalReadProgress, getBooksWithReadProgress } from '../db/database';
 import { useSettings } from '../contexts/SettingsContext';
+import { usePlans } from '../contexts/PlansContext';
+import PlanPicker from '../components/PlanPicker';
 import ProgressRing from '../components/ProgressRing';
 import { getTitleAndBadge } from '../data/titles';
 import { useTheme } from '../contexts/ThemeContext';
@@ -34,11 +36,12 @@ export default function ProgressScreen({ navigation }: any) {
   const [books, setBooks] = useState<BookProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const { showDeuterocanonical } = useSettings();
+  const { activePlanId } = usePlans();
 
   useFocusEffect(
     React.useCallback(() => {
       loadProgress();
-    }, [showDeuterocanonical])
+    }, [showDeuterocanonical, activePlanId])
   );
 
   async function loadProgress() {
@@ -92,6 +95,11 @@ export default function ProgressScreen({ navigation }: any) {
           contentContainerStyle={styles.listContainer}
           ListHeaderComponent={
             <>
+              {/* Meta de leitura (cada uma tem progresso e cor próprios) */}
+              <View style={{ marginTop: 20 }}>
+                <PlanPicker />
+              </View>
+
               {/* Circle com porcentagem */}
               <View style={styles.circleContainer}>
                 <ProgressRing
@@ -164,6 +172,7 @@ export default function ProgressScreen({ navigation }: any) {
                     styles.bookProgressFill,
                     {
                       width: `${(item.readChapters / item.totalChapters) * 100}%`,
+                      backgroundColor: colors.accentColor,
                     },
                   ]}
                 />
@@ -210,7 +219,7 @@ const styles = StyleSheet.create({
   },
   circleContainer: {
     alignItems: 'center',
-    marginTop: 24,
+    marginTop: 16,
     marginBottom: 24,
   },
   percentageContainer: {

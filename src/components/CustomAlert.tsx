@@ -2,8 +2,10 @@ import React, { useEffect, useRef } from 'react';
 import {
     View, Text, StyleSheet, TouchableOpacity, Animated, Modal, TouchableWithoutFeedback
 } from 'react-native';
+import { useTheme } from '../contexts/ThemeContext';
 
 export default function CustomAlert({ visible, title, message, onClose }: any) {
+    const { colors } = useTheme();
     const opacity = useRef(new Animated.Value(0)).current;
     const scale = useRef(new Animated.Value(0.9)).current;
 
@@ -41,7 +43,7 @@ export default function CustomAlert({ visible, title, message, onClose }: any) {
                             <Text style={styles.message}>{message}</Text>
 
                             <TouchableOpacity style={styles.button} onPress={onClose}>
-                                <Text style={styles.buttonText}>OK</Text>
+                                <Text style={[styles.buttonText, { color: colors.accentColor }]}>OK</Text>
                             </TouchableOpacity>
                         </Animated.View>
                     </TouchableWithoutFeedback>

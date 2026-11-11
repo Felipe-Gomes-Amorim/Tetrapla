@@ -240,12 +240,34 @@ export async function getAvailableLanguages(
 // ===== PROGRESSO DE LEITURA (FileSystem) =====
 import * as FileSystem from 'expo-file-system/legacy';
 
-const READ_CHAPTERS_DIR = `${FileSystem.documentDirectory}read_chapters/`;
+// Cada meta de leitura tem a sua pasta de capítulos lidos; a Padrão mantém a pasta original
+function planDir(planId: string): string {
+  return planId === 'default'
+    ? `${FileSystem.documentDirectory}read_chapters/`
+    : `${FileSystem.documentDirectory}read_chapters_${planId}/`;
+}
+
+let READ_CHAPTERS_DIR = planDir('default');
 
 export async function ensureReadChaptersDir() {
   const dirInfo = await FileSystem.getInfoAsync(READ_CHAPTERS_DIR);
   if (!dirInfo.exists) {
     await FileSystem.makeDirectoryAsync(READ_CHAPTERS_DIR, { intermediates: true });
+  }
+}
+
+// Troca a meta ativa: o progresso passa a ser lido/gravado na pasta dela
+export function setReadPlan(planId: string) {
+  READ_CHAPTERS_DIR = planDir(planId);
+  invalidateReadMap();
+}
+
+export async function deleteReadPlanData(planId: string) {
+  if (planId === 'default') return;
+  try {
+    await FileSystem.deleteAsync(planDir(planId), { idempotent: true });
+  } catch (e) {
+    console.warn('Não foi possível apagar o progresso da meta:', e);
   }
 }
 

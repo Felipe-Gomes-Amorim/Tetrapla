@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import * as FileSystem from 'expo-file-system/legacy';
+import { usePlans } from './PlansContext';
 
 export type ThemeMode = 'light' | 'dark';
 
@@ -15,6 +16,7 @@ export interface ThemeColors {
   cardBackground: string;
   accentColor: string;
   borderColor: string;
+  readBackground: string; // fundo de capítulo lido nas grades
   isDark?: boolean;
 }
 
@@ -38,6 +40,7 @@ const LightColors: ThemeColors = {
   cardBackground: '#f5f5f5',
   accentColor: '#1D9E75',
   borderColor: '#eee',
+  readBackground: '#E8F5E9',
 };
 
 const DarkColors: ThemeColors = {
@@ -52,6 +55,7 @@ const DarkColors: ThemeColors = {
   cardBackground: '#1e1e1e',
   accentColor: '#4CAF50',
   borderColor: '#2a2a2a',
+  readBackground: '#1a3a1a',
 };
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
@@ -98,10 +102,14 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   };
 
   // Objetos estáveis: só mudam quando o tema muda (permite React.memo nas listas)
-  const colors = useMemo(
-    () => (mode === 'light' ? { ...LightColors, isDark: false } : { ...DarkColors, isDark: true }),
-    [mode]
-  );
+  // A cor da meta de leitura ativa troca o verde da Bíblia (a meta Padrão mantém o verde original)
+  const { activePlan } = usePlans();
+  const planColor = activePlan?.color ?? null;
+  const colors = useMemo(() => {
+    const base = mode === 'light' ? { ...LightColors, isDark: false } : { ...DarkColors, isDark: true };
+    if (!planColor) return base;
+    return { ...base, accentColor: planColor, readBackground: tintOf(planColor, base.isDark) };
+  }, [mode, planColor]);
   const isDark = mode === 'dark';
 
   const value: ThemeContextType = useMemo(
@@ -161,24 +169,31 @@ export function toFathersBlue(hex: string): string {
   return hslToHex(FATHERS_HUE, s, l);
 }
 
+// Fundo claro/escuro com o matiz da cor (equivale ao verde #E8F5E9 / #1a3a1a do tema padrão)
+export function tintOf(hex: string, isDark: boolean): string {
+  const [h] = hexToHsl(hex);
+  return hslToHex(h, 0.39, isDark ? 0.17 : 0.94);
+}
+
 export interface FathersColors extends ThemeColors {
-  readBackground: string; // fundo de capítulo lido na grade
   noteBackground: string; // fundo da nota do tradutor/citações
   progressTrack: string;
 }
 
 export function useFathersTheme(): { colors: FathersColors } {
   const { colors, isDark } = useTheme();
+  // O azul dos Pais parte sempre do verde padrão, sem acompanhar a cor da meta de leitura da Bíblia
+  const baseAccent = isDark ? DarkColors.accentColor : LightColors.accentColor;
   return useMemo(
     () => ({
       colors: {
         ...colors,
-        accentColor: toFathersBlue(colors.accentColor),
+        accentColor: toFathersBlue(baseAccent),
         readBackground: toFathersBlue(isDark ? '#1a3a1a' : '#E8F5E9'),
         noteBackground: toFathersBlue(isDark ? '#23302b' : '#eef6f2'),
         progressTrack: colors.cardBackground,
       },
     }),
-    [colors.accentColor, colors.background, isDark]
+    [colors, baseAccent, isDark]
   );
 }

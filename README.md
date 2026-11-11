@@ -7,6 +7,7 @@
 * **Textos em múltiplos idiomas**, alinhados versículo por versículo: português (ARA), latim (Vulgata), grego (Septuaginta / Novo Testamento), hebraico (Texto Massorético) e aramaico quando aplicável.
 * **Referências patrísticas**: mais de 12 mil citações dos Pais Ante-Nicenos ligadas a versículos específicos (folha deslizante no leitor).
 * **Pais da Igreja**: 23 escritos dos Pais Apostólicos, de Justino Mártir e de Ireneu (ANF vol. 1, em português) divididos em capítulos, com progresso de leitura e pesquisa próprios.
+* **Metas de leitura**: na tela de Progresso há um menu de metas; cada uma tem nome, cor e progresso próprio (a cor troca o verde da Bíblia). Edição e remoção em Configurações.
 * **Prefácios de São Jerônimo** para os livros que os têm.
 * **Busca de versículos** em ordem bíblica, com contador de resultados e carregamento em páginas.
 * **Progresso de leitura**: marcação de capítulos lidos, anel de progresso, porcentagem da Bíblia e títulos por nível.

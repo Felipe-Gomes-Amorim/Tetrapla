@@ -24,6 +24,7 @@ import ProgressScreen from './src/screens/ProgressScreen';
 import SettingsScreen from './src/screens/SettingsScreen';
 import { initializeDatabase } from './src/db/database';
 import { ThemeProvider, useTheme, useFathersTheme } from './src/contexts/ThemeContext';
+import { PlansProvider } from './src/contexts/PlansContext';
 import { SettingsProvider } from './src/contexts/SettingsContext';
 import { BRAND_FONT_NAME, SUB_FONT_NAME, READING_FONT_NAME, setBrandFontLoaded, setSubFontLoaded, setReadingFontLoaded, subFont } from './src/theme/fonts';
 
@@ -49,7 +50,7 @@ function AppContent() {
         onPress={() => navigation.navigate('Search')}
         style={{ paddingRight: 12 }}
       >
-        <Ionicons name="search" size={24} color="#1D9E75" />
+        <Ionicons name="search" size={24} color={colors.accentColor} />
       </TouchableOpacity>
     ),
   });
@@ -123,7 +124,7 @@ function AppContent() {
                   onPress={() => navigation.navigate('Search')}
                   style={{ paddingRight: 12 }}
                 >
-                  <Ionicons name="search" size={24} color="#1D9E75" />
+                  <Ionicons name="search" size={24} color={colors.accentColor} />
                 </TouchableOpacity>
               ),
             };
@@ -258,13 +259,15 @@ export default function App() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <ThemeProvider>
-          <SettingsProvider>
-            <SQLiteProvider databaseName="bible.db" onInit={testDatabase}>
-              <AppContent />
-            </SQLiteProvider>
-          </SettingsProvider>
-        </ThemeProvider>
+        <PlansProvider>
+          <ThemeProvider>
+            <SettingsProvider>
+              <SQLiteProvider databaseName="bible.db" onInit={testDatabase}>
+                <AppContent />
+              </SQLiteProvider>
+            </SettingsProvider>
+          </ThemeProvider>
+        </PlansProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );
