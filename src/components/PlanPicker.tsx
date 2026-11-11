@@ -3,7 +3,7 @@ import {
   View, Text, TouchableOpacity, Modal, TextInput, StyleSheet, KeyboardAvoidingView, Platform, Pressable,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme, planAccent } from '../contexts/ThemeContext';
 import { usePlans } from '../contexts/PlansContext';
 import { DEFAULT_PLAN_ID, DEFAULT_PLAN_NAME, PLAN_COLORS } from '../data/plans';
 import ColorSwatches from './ColorSwatches';
@@ -21,7 +21,8 @@ export default function PlanPicker() {
 
   // Cor do ponto da Padrão = verde do tema; das demais = cor da meta
   const defaultDot = isDark ? '#4CAF50' : '#1D9E75';
-  const activeDot = plans.find(p => p.id === activePlanId)?.color ?? defaultDot;
+  const activePlanColor = plans.find(p => p.id === activePlanId)?.color;
+  const activeDot = activePlanColor ? planAccent(activePlanColor, isDark) : defaultDot;
 
   const close = () => {
     setOpen(false);
@@ -58,7 +59,7 @@ export default function PlanPicker() {
             <Pressable style={[styles.sheet, { backgroundColor: colors.background, borderColor: colors.borderColor }]}>
               <Text style={[styles.sheetTitle, { color: colors.text }, subFont()]}>Metas de leitura</Text>
 
-              {[{ id: DEFAULT_PLAN_ID, name: DEFAULT_PLAN_NAME, color: defaultDot }, ...plans].map(p => (
+              {[{ id: DEFAULT_PLAN_ID, name: DEFAULT_PLAN_NAME, color: defaultDot }, ...plans.map(p => ({ ...p, color: planAccent(p.color, isDark) }))].map(p => (
                 <TouchableOpacity key={p.id} style={styles.option} onPress={() => choose(p.id)}>
                   <View style={[styles.dot, { backgroundColor: p.color }]} />
                   <Text style={[styles.optionText, { color: colors.text }]} numberOfLines={1}>{p.name}</Text>
@@ -85,7 +86,7 @@ export default function PlanPicker() {
                     <TouchableOpacity
                       onPress={create}
                       disabled={!name.trim()}
-                      style={[styles.actionBtn, styles.createBtn, { backgroundColor: color, opacity: name.trim() ? 1 : 0.4 }]}
+                      style={[styles.actionBtn, styles.createBtn, { backgroundColor: planAccent(color, isDark), opacity: name.trim() ? 1 : 0.4 }]}
                     >
                       <Text style={styles.createBtnText}>Criar meta</Text>
                     </TouchableOpacity>

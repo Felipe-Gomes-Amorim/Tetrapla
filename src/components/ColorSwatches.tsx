@@ -2,15 +2,17 @@ import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { PLAN_COLORS } from '../data/plans';
+import { useTheme, planAccent } from '../contexts/ThemeContext';
 
 // Paleta de cores das metas de leitura (uma linha de bolinhas que quebra conforme a largura)
 export default function ColorSwatches({ value, onChange }: { value: string; onChange: (color: string) => void }) {
+  const { isDark } = useTheme();
   return (
     <View style={styles.row}>
       {PLAN_COLORS.map(c => (
         <TouchableOpacity
           key={c}
-          style={[styles.swatch, { backgroundColor: c }]}
+          style={[styles.swatch, { backgroundColor: planAccent(c, isDark) }]}
           onPress={() => onChange(c)}
           accessibilityRole="button"
           accessibilityLabel={`Cor ${c}`}

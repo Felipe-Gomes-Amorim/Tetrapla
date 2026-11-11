@@ -9,11 +9,11 @@ export interface ReadingPlan {
 export const DEFAULT_PLAN_ID = 'default';
 export const DEFAULT_PLAN_NAME = 'Padrão';
 
-// Cores oferecidas ao criar/editar uma meta (o verde padrão fica de fora)
+// Cores oferecidas ao criar/editar uma meta. Só o matiz importa: o tema aplica a mesma saturação e
+// luminosidade do verde padrão (como no azul dos Pais). Aqui já estão na saturação/luminosidade do tema claro.
 export const PLAN_COLORS = [
-  '#E53935', '#F4511E', '#FB8C00', '#C0A000', '#7CB342',
-  '#00897B', '#00ACC1', '#3949AB', '#8E24AA', '#D81B60',
-  '#6D4C41', '#546E7A',
+  '#A11D1D', '#A1451D', '#A16C1D', '#A18F1D', '#63A11D', '#1D96A1',
+  '#1D75A1', '#1D28A1', '#541DA1', '#8B1DA1', '#A11D75', '#A11D3E',
 ];
 
 export interface StoredPlans {

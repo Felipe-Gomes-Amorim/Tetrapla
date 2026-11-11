@@ -108,7 +108,8 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const colors = useMemo(() => {
     const base = mode === 'light' ? { ...LightColors, isDark: false } : { ...DarkColors, isDark: true };
     if (!planColor) return base;
-    return { ...base, accentColor: planColor, readBackground: tintOf(planColor, base.isDark) };
+    const accent = planAccent(planColor, base.isDark);
+    return { ...base, accentColor: accent, readBackground: tintOf(accent, base.isDark) };
   }, [mode, planColor]);
   const isDark = mode === 'dark';
 
@@ -167,6 +168,13 @@ function hslToHex(h: number, s: number, l: number): string {
 export function toFathersBlue(hex: string): string {
   const [, s, l] = hexToHsl(hex);
   return hslToHex(FATHERS_HUE, s, l);
+}
+
+// Cor da meta no tema atual: mantém o matiz escolhido e usa a saturação/luminosidade do verde do tema
+export function planAccent(planColor: string, isDark: boolean): string {
+  const [h] = hexToHsl(planColor);
+  const [, s, l] = hexToHsl(isDark ? DarkColors.accentColor : LightColors.accentColor);
+  return hslToHex(h, s, l);
 }
 
 // Fundo claro/escuro com o matiz da cor (equivale ao verde #E8F5E9 / #1a3a1a do tema padrão)

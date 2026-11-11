@@ -2,14 +2,14 @@ import React, { useEffect, useRef, useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Switch, Animated, ScrollView, TextInput, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
-import { useTheme } from '../contexts/ThemeContext';
+import { useTheme, planAccent } from '../contexts/ThemeContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { usePlans } from '../contexts/PlansContext';
 import ColorSwatches from '../components/ColorSwatches';
 import { subFont } from '../theme/fonts';
 
 export default function SettingsScreen({ navigation }: any) {
-  const { colors } = useTheme();
+  const { colors, isDark } = useTheme();
   const { plans, updatePlan, removePlan } = usePlans();
   const [editingPlanId, setEditingPlanId] = useState<string | null>(null);
   const { showDeuterocanonical, setShowDeuterocanonical, groupBooks, setGroupBooks, otOrder, setOtOrder } = useSettings();
@@ -149,7 +149,7 @@ export default function SettingsScreen({ navigation }: any) {
               return (
                 <View key={p.id} style={i > 0 && [styles.planDivider, { borderTopColor: colors.borderColor }]}>
                   <TouchableOpacity style={styles.planRow} onPress={() => setEditingPlanId(editing ? null : p.id)}>
-                    <View style={[styles.planDot, { backgroundColor: p.color }]} />
+                    <View style={[styles.planDot, { backgroundColor: planAccent(p.color, isDark) }]} />
                     <Text style={[styles.label, { color: colors.text }]} numberOfLines={1}>{p.name}</Text>
                     <Ionicons name={editing ? 'chevron-up' : 'create-outline'} size={20} color={colors.textSecondary} />
                   </TouchableOpacity>
