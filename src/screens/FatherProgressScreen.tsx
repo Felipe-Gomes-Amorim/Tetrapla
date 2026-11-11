@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, FlatList, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import FadeInView from '../components/FadeInView';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import ProgressRing from '../components/ProgressRing';
@@ -70,6 +71,7 @@ export default function FatherProgressScreen({ navigation }: any) {
           <ActivityIndicator size="large" color={colors.accentColor} />
         </View>
       ) : (
+        <FadeInView>
         <FlatList
           data={rows}
           keyExtractor={r => r.key}
@@ -129,6 +131,7 @@ export default function FatherProgressScreen({ navigation }: any) {
             );
           }}
         />
+        </FadeInView>
       )}
     </SafeAreaView>
   );

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,7 +10,8 @@ import {
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
-import { getTotalReadProgress, getBooksWithReadProgress } from '../db/database';
+import { getTotalReadProgress, getBooksWithReadProgress, getReadProgressVersion } from '../db/database';
+import FadeInView from '../components/FadeInView';
 import { useSettings } from '../contexts/SettingsContext';
 import { usePlans } from '../contexts/PlansContext';
 import PlanPicker from '../components/PlanPicker';
@@ -38,15 +39,21 @@ export default function ProgressScreen({ navigation }: any) {
   const { showDeuterocanonical } = useSettings();
   const { activePlanId } = usePlans();
 
+  // Só recarrega se algo mudou desde a última carga (capítulo marcado, configuração ou meta);
+  // o indicador de carregamento só aparece na primeira vez, sem piscar a cada volta à tela
+  const lastLoad = useRef<{ version: number; deutero: boolean; plan: string } | null>(null);
   useFocusEffect(
     React.useCallback(() => {
+      const current = { version: getReadProgressVersion(), deutero: showDeuterocanonical, plan: activePlanId };
+      const last = lastLoad.current;
+      if (last && last.version === current.version && last.deutero === current.deutero && last.plan === current.plan) return;
+      lastLoad.current = current;
       loadProgress();
     }, [showDeuterocanonical, activePlanId])
   );
 
   async function loadProgress() {
     try {
-      setLoading(true);
       const prog = await getTotalReadProgress(showDeuterocanonical);
       setProgress(prog);
 
@@ -89,6 +96,7 @@ export default function ProgressScreen({ navigation }: any) {
           <ActivityIndicator size="large" color={colors.accentColor} />
         </View>
       ) : (
+        <FadeInView>
         <FlatList
           data={books}
           keyExtractor={item => item.code}
@@ -183,6 +191,7 @@ export default function ProgressScreen({ navigation }: any) {
             </View>
           )}
         />
+        </FadeInView>
       )}
     </SafeAreaView>
   );

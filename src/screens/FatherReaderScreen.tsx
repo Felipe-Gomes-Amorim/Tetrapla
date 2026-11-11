@@ -2,7 +2,6 @@ import React, { useState, useEffect, useMemo, useCallback, useRef } from 'react'
 import { View, Text, FlatList, ActivityIndicator, TouchableOpacity, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Markdown from 'react-native-markdown-display';
-import * as FileSystem from 'expo-file-system/legacy';
 import { Ionicons } from '@expo/vector-icons';
 import { useFathersTheme } from '../contexts/ThemeContext';
 import { getFatherWork, FatherWork } from '../data/fathers';
@@ -11,6 +10,8 @@ import { isChapterRead, markChapterRead, unmarkChapterRead } from '../data/fathe
 import { foldText } from '../data/fatherSearch';
 import { splitMarkdown, MdBlock } from '../data/markdownBlocks';
 import { brandFont, readingFont, subFont } from '../theme/fonts';
+import { loadFontSize, saveFontSize, getCachedFontSize } from '../data/fontSize';
+import FadeInView from '../components/FadeInView';
 import FontSizeModal from '../components/FontSizeModal';
 import type { FathersColors } from '../contexts/ThemeContext';
 
@@ -120,7 +121,7 @@ export default function FatherReaderScreen({ route, navigation }: any) {
   const [parsed, setParsed] = useState<ParsedWork | null>(getCachedWork(id) ?? null);
   const [error, setError] = useState(false);
   const [reloadKey, setReloadKey] = useState(0);
-  const [fontSize, setFontSize] = useState(16);
+  const [fontSize, setFontSize] = useState(getCachedFontSize);
   const [fontSizeModalVisible, setFontSizeModalVisible] = useState(false);
   const [isRead, setIsRead] = useState(false);
   const flatListRef = useRef<FlatList>(null);
@@ -149,23 +150,14 @@ export default function FatherReaderScreen({ route, navigation }: any) {
     });
   }, [navigation, work, chapter, colors]);
 
-  // Mesmo tamanho de fonte (fontsize.txt) do leitor da Bíblia
+  // Mesmo tamanho de fonte do leitor da Bíblia
   useEffect(() => {
-    FileSystem.readAsStringAsync(FileSystem.documentDirectory + 'fontsize.txt')
-      .then(content => {
-        const size = parseInt(content, 10);
-        if (size > 0) setFontSize(size);
-      })
-      .catch(() => { /* sem preferência salva */ });
+    loadFontSize().then(setFontSize);
   }, []);
 
-  const saveFontSize = async (size: number) => {
+  const saveSize = (size: number) => {
     setFontSize(size);
-    try {
-      await FileSystem.writeAsStringAsync(FileSystem.documentDirectory + 'fontsize.txt', String(size));
-    } catch (e) {
-      console.error('Erro ao salvar fontSize:', e);
-    }
+    saveFontSize(size);
   };
 
   useEffect(() => {
@@ -257,6 +249,7 @@ export default function FatherReaderScreen({ route, navigation }: any) {
 
   return (
     <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['left', 'right', 'bottom']}>
+      <FadeInView>
       <FlatList
         ref={flatListRef}
         ListHeaderComponent={
@@ -281,6 +274,7 @@ export default function FatherReaderScreen({ route, navigation }: any) {
           }, 200);
         }}
       />
+      </FadeInView>
 
       <View style={[styles.navBar, { backgroundColor: colors.background, borderTopColor: colors.borderColor }]}>
         <TouchableOpacity
@@ -332,8 +326,8 @@ export default function FatherReaderScreen({ route, navigation }: any) {
         visible={fontSizeModalVisible}
         currentSize={fontSize}
         onClose={() => setFontSizeModalVisible(false)}
-        onIncrease={() => fontSize < 32 && saveFontSize(fontSize + 2)}
-        onDecrease={() => fontSize > 12 && saveFontSize(fontSize - 2)}
+        onIncrease={() => fontSize < 32 && saveSize(fontSize + 2)}
+        onDecrease={() => fontSize > 12 && saveSize(fontSize - 2)}
         colors={{
           background: colors.background,
           text: colors.text,

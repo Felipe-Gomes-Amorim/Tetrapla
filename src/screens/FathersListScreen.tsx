@@ -10,6 +10,7 @@ import { useFathersTheme } from '../contexts/ThemeContext';
 import { getFatherGroups, FatherWork } from '../data/fathers';
 import { getWorkChapters, ParsedWork, INTRO_N, NOTES_N } from '../data/fatherChapters';
 import { getReadChapters, getTotalProgress, getFatherProgressVersion } from '../data/fatherProgress';
+import FadeInView from '../components/FadeInView';
 import OutlinedIcon from '../components/OutlinedIcon';
 import { subFont } from '../theme/fonts';
 
@@ -149,6 +150,7 @@ export default function FathersListScreen({ navigation }: any) {
     const chapters = parsed?.chapters ?? [];
     chaptersView = (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+        <FadeInView trigger={selectedWork.id}>
         <View style={[styles.chapterHeader, { borderBottomColor: colors.borderColor }]}>
           <TouchableOpacity onPress={() => setSelectedWork(null)} style={styles.headerBtn}>
             <Ionicons name="chevron-back" size={24} color={colors.accentColor} />
@@ -203,6 +205,7 @@ export default function FathersListScreen({ navigation }: any) {
             removeClippedSubviews
           />
         )}
+        </FadeInView>
       </SafeAreaView>
     );
   }
@@ -215,6 +218,7 @@ export default function FathersListScreen({ navigation }: any) {
       style={[styles.container, { backgroundColor: colors.background }, selectedWork && styles.hidden]}
       edges={['top', 'left', 'right']}
     >
+      <FadeInView trigger={selectedWork === null}>
       <View style={[styles.titleBar, { borderBottomColor: colors.borderColor }]}>
         <Text style={[styles.title, { color: colors.text }, subFont()]}>Pais da Igreja</Text>
         {topButtons}
@@ -230,6 +234,7 @@ export default function FathersListScreen({ navigation }: any) {
         renderItem={renderWork}
         initialNumToRender={20}
       />
+      </FadeInView>
     </SafeAreaView>
     </>
   );

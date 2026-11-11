@@ -8,6 +8,7 @@ import { useSQLiteContext } from 'expo-sqlite';
 import { BOOKS, getPreface, getTotalReadProgress, isApocryphal, getReadChaptersForBook, getBooksWithReadProgress, getReadProgressVersion } from '../db/database';
 import { useSettings } from '../contexts/SettingsContext';
 import { usePlans } from '../contexts/PlansContext';
+import FadeInView from '../components/FadeInView';
 import { useFocusEffect } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import OutlinedIcon from '../components/OutlinedIcon';
@@ -244,6 +245,7 @@ export default function BookListScreen({ navigation }: any) {
   // assim o scroll e a busca são mantidos ao voltar
   const chaptersView = selectedBook ? (
       <SafeAreaView style={[styles.container, { backgroundColor: colors.background }]} edges={['top', 'left', 'right']}>
+        <FadeInView trigger={selectedBook?.code}>
         {/* Header com título */}
         <View style={[styles.chapterHeaderContainer, { borderBottomColor: colors.borderColor }]}>
           <TouchableOpacity onPress={() => {
@@ -286,6 +288,7 @@ export default function BookListScreen({ navigation }: any) {
           windowSize={7}
           removeClippedSubviews
         />
+        </FadeInView>
       </SafeAreaView>
   ) : null;
 
@@ -296,6 +299,7 @@ export default function BookListScreen({ navigation }: any) {
         style={[styles.container, { backgroundColor: colors.background }, selectedBook && styles.hidden]}
         edges={['top', 'left', 'right']}
       >
+        <FadeInView trigger={selectedBook === null}>
         <View style={[styles.titleBarContainer, { backgroundColor: colors.background, borderBottomColor: colors.borderColor }]}>
           <TouchableOpacity onPress={toggleTheme}>
             <Text style={[styles.title, { color: colors.text }, brandFont()]}>Tetrapla</Text>
@@ -332,6 +336,7 @@ export default function BookListScreen({ navigation }: any) {
           removeClippedSubviews
           ListEmptyComponent={<Text style={[styles.emptyText, { color: colors.textSecondary }]}>Nenhum livro encontrado</Text>}
         />
+        </FadeInView>
       </SafeAreaView>
     </>
   );

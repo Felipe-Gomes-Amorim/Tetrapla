@@ -1,12 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, FlatList, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Platform, BackHandler } from 'react-native';
 import * as Clipboard from 'expo-clipboard';
-import * as FileSystem from 'expo-file-system/legacy';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { useSQLiteContext } from 'expo-sqlite';
-import { getVerses, getPatristicCountsForChapter, getPatristicRefs, markChapterAsRead, unmarkChapterAsRead, isChapterRead, getPreface, getAvailableLanguages, getCachedLanguages } from '../db/database';
+import { getVerses, getPatristicCountsForChapter, getPatristicRefs, markChapterAsRead, unmarkChapterAsRead, isChapterRead, getAvailableLanguages, getCachedLanguages } from '../db/database';
 import PatristicSheet from '../components/PatristicSheet';
+import { loadFontSize, saveFontSize, getCachedFontSize } from '../data/fontSize';
+import FadeInView from '../components/FadeInView';
 import CustomAlert from '../components/CustomAlert';
 import FontSizeModal from '../components/FontSizeModal';
 import { Ionicons } from '@expo/vector-icons';
@@ -42,9 +43,8 @@ export default function ReaderScreen({ route, navigation }: any) {
   const [sheetVisible, setSheetVisible] = useState(false);
   const [alertVisible, setAlertVisible] = useState(false);
   const [fontSizeModalVisible, setFontSizeModalVisible] = useState(false);
-  const [fontSize, setFontSize] = useState(16);
+  const [fontSize, setFontSize] = useState(getCachedFontSize);
   const [chapterRead, setChapterRead] = useState(false);
-  const [prefaceData, setPrefaceData] = useState<any>(null);
   const flatListRef = useRef<FlatList>(null);
 
   // Oferecer só os idiomas que o livro tem (consulta em cache por livro)
@@ -56,41 +56,25 @@ export default function ReaderScreen({ route, navigation }: any) {
     return () => { active = false; };
   }, [book]);
 
-  // Carregar tamanho de fonte salvo ao montar
+  // Tamanho de fonte salvo (em memória depois da primeira leitura)
   useEffect(() => {
-    loadFontSize();
+    loadFontSize().then(setFontSize);
   }, []);
 
-  const loadFontSize = async () => {
-    try {
-      const path = FileSystem.documentDirectory + 'fontsize.txt';
-      const content = await FileSystem.readAsStringAsync(path);
-      const size = parseInt(content);
-      if (size > 0) setFontSize(size);
-    } catch (e) {
-      // Arquivo não existe ainda, mantém valor padrão
-    }
-  };
-
-  const saveFontSize = async (size: number) => {
-    try {
-      const path = FileSystem.documentDirectory + 'fontsize.txt';
-      await FileSystem.writeAsStringAsync(path, String(size));
-      setFontSize(size);
-    } catch (e) {
-      console.error('Erro ao salvar fontSize:', e);
-    }
+  const saveSize = (size: number) => {
+    setFontSize(size);
+    saveFontSize(size);
   };
 
   const increaseFontSize = () => {
     if (fontSize < 32) {
-      saveFontSize(fontSize + 2);
+      saveSize(fontSize + 2);
     }
   };
 
   const decreaseFontSize = () => {
     if (fontSize > 12) {
-      saveFontSize(fontSize - 2);
+      saveSize(fontSize - 2);
     }
   };
 
@@ -152,27 +136,15 @@ export default function ReaderScreen({ route, navigation }: any) {
   async function loadChapter() {
     setLoading(true);
     try {
-      const rows = await getVerses(db, book, chapter);
+      // Versículos, contagem de referências e estado de leitura em paralelo
+      const [rows, c, isRead] = await Promise.all([
+        getVerses(db, book, chapter),
+        getPatristicCountsForChapter(db, book, chapter),
+        isChapterRead(book, chapter),
+      ]);
       setVerses(rows);
-      const c = await getPatristicCountsForChapter(db, book, chapter);
       setCounts(c);
-
-      // Carregar estado do capítulo
-      const isRead = await isChapterRead(book, chapter);
       setChapterRead(isRead);
-
-      // Carregar prefácio do livro (se houver)
-      try {
-        const prefaceRows = await getPreface(db, book);
-        if (prefaceRows && prefaceRows.length > 0) {
-          setPrefaceData(prefaceRows[0]);
-        } else {
-          setPrefaceData(null);
-        }
-      } catch (e) {
-        console.log('Prefácio não disponível para', book);
-        setPrefaceData(null);
-      }
     } catch (e) {
       console.error('Erro ao carregar capítulo:', e);
     } finally {
@@ -255,6 +227,7 @@ export default function ReaderScreen({ route, navigation }: any) {
         ))}
       </View>
 
+      <FadeInView>
       <FlatList
         ref={flatListRef}
         data={verses}
@@ -312,6 +285,7 @@ export default function ReaderScreen({ route, navigation }: any) {
           );
         }}
       />
+      </FadeInView>
 
       <View style={[styles.navBar, dynamicStyles.navBar]}>
         <TouchableOpacity

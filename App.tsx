@@ -1,6 +1,6 @@
 import 'react-native-gesture-handler';
 import React, { useEffect, useState } from 'react';
-import { View, ActivityIndicator, Platform, TouchableOpacity, StatusBar } from 'react-native';
+import { View, ActivityIndicator, Platform, TouchableOpacity, StatusBar, Easing } from 'react-native';
 import { NavigationContainer, DefaultTheme, DarkTheme } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
@@ -81,6 +81,19 @@ function AppContent() {
           cardStyle: {
             backgroundColor: colors.background,
           },
+          // Todas as telas empilhadas entram deslizando da direita com fade (o Reader tem a sua própria)
+          transitionSpec: {
+            open: { animation: 'timing', config: { duration: 240, easing: Easing.out(Easing.cubic) } },
+            close: { animation: 'timing', config: { duration: 190, easing: Easing.in(Easing.cubic) } },
+          },
+          cardStyleInterpolator: ({ current, layouts }) => ({
+            cardStyle: {
+              opacity: current.progress.interpolate({ inputRange: [0, 1], outputRange: [0, 1] }),
+              transform: [{
+                translateX: current.progress.interpolate({ inputRange: [0, 1], outputRange: [layouts.screen.width * 0.2, 0] }),
+              }],
+            },
+          }),
         }}
       >
         <Stack.Screen

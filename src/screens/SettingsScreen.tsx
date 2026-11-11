@@ -5,6 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme, planAccent } from '../contexts/ThemeContext';
 import { useSettings } from '../contexts/SettingsContext';
 import { usePlans } from '../contexts/PlansContext';
+import FadeInView from '../components/FadeInView';
 import ColorSwatches from '../components/ColorSwatches';
 import { subFont } from '../theme/fonts';
 
@@ -53,6 +54,7 @@ export default function SettingsScreen({ navigation }: any) {
         <View style={{ width: 28 }} />
       </View>
 
+      <FadeInView>
       <ScrollView contentContainerStyle={styles.content} keyboardShouldPersistTaps="handled">
         <Text style={[styles.sectionTitle, { color: colors.accentColor }, subFont()]}>Livros</Text>
         <View style={[styles.card, { backgroundColor: colors.cardBackground, borderColor: colors.borderColor }]}>
@@ -184,6 +186,7 @@ export default function SettingsScreen({ navigation }: any) {
           )}
         </View>
       </ScrollView>
+      </FadeInView>
     </SafeAreaView>
   );
 }
