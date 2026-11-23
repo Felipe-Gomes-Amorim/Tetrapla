@@ -1,3 +1,6 @@
+<img width="3192" height="1239" alt="TEtrapla BAnner" src="https://github.com/user-attachments/assets/c48a06cc-d924-4b8d-9426-d2b0dbb19cf3" />
+
+
 # Tetrapla
 
 **Tetrapla**, inspirado pela Hexapla de Orígenes, é um aplicativo mobile de estudo bíblico que coloca diferentes tradições textuais lado a lado e incentiva a leitura contínua com um sistema de progresso.
